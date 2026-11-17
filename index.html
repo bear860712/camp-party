@@ -1,0 +1,1633 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1026">
+<title>小台積電股票的露營性別趴</title>
+<meta name="description" content="一起圍著營火投票、留下祝福，狂點集氣揭曉小台積電股票是男孩還是女孩！">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+  :root {
+    --night-0: #070b1d;
+    --night-1: #0b1026;
+    --night-2: #16204a;
+    --night-3: #2a2f63;
+    --cream: #fff6e6;
+    --muted: #b9c0e0;
+    --amber: #ffc163;
+    --fire: #ff7b2e;
+    --ember: #ff4d2e;
+    --boy: #5fb0ff;
+    --boy-deep: #2f7de1;
+    --girl: #ff8fc4;
+    --girl-deep: #ef5a9d;
+    --forest: #13223a;
+    --card: rgba(255, 255, 255, .06);
+    --card-border: rgba(255, 255, 255, .12);
+    --radius: 20px;
+    --font-display: "Huninn", "Noto Sans TC", system-ui, sans-serif;
+    --font-body: "Noto Sans TC", system-ui, -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh;
+    background-color: var(--night-1);
+    background-image: radial-gradient(120% 70% at 50% 0%, var(--night-3) 0%, var(--night-2) 42%, var(--night-1) 78%, var(--night-0) 100%);
+    background-attachment: fixed;
+    color: var(--cream);
+    font-family: var(--font-body);
+    line-height: 1.55;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+  }
+  button, input, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+
+  #sky, #fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #sky { z-index: 0; }
+  #fx { z-index: 30; }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 0 16px calc(40px + env(safe-area-inset-bottom));
+  }
+  body.has-preview .page { padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
+
+  /* ── 串燈 ── */
+  .lights { position: relative; height: 54px; margin: 0 -16px; }
+  .lights svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .bulb {
+    position: absolute;
+    width: 10px; height: 14px;
+    margin-left: -5px;
+    border-radius: 50% 50% 45% 45%;
+    background: var(--c);
+    box-shadow: 0 0 10px 2px var(--c), 0 0 22px 4px color-mix(in srgb, var(--c) 45%, transparent);
+    animation: twinkle 2.6s ease-in-out infinite;
+    animation-delay: var(--d);
+  }
+  .bulb::before {
+    content: ""; position: absolute; top: -4px; left: 3px; width: 4px; height: 5px;
+    border-radius: 1px; background: #4a4a5e;
+  }
+  @keyframes twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+
+  /* ── 標題 ── */
+  header { text-align: center; padding: 6px 0 4px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; letter-spacing: .12em; color: var(--amber);
+    background: rgba(255, 193, 99, .1); border: 1px solid rgba(255, 193, 99, .25);
+    padding: 4px 12px; border-radius: 999px;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(28px, 8.2vw, 42px);
+    line-height: 1.2;
+    margin: 12px 0 6px;
+    letter-spacing: .02em;
+    text-shadow: 0 0 18px rgba(255, 193, 99, .35), 0 2px 0 rgba(0, 0, 0, .3);
+  }
+  h1 .hl { color: var(--amber); }
+  .subtitle { margin: 0; color: var(--muted); font-size: 15px; }
+
+  .conn {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+    font-size: 12px; color: var(--muted);
+  }
+  .conn::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: #8a8fb0;
+  }
+  .conn.ok::before { background: #5be38a; box-shadow: 0 0 8px #5be38a; }
+  .conn.bad::before { background: #ff6a6a; box-shadow: 0 0 8px #ff6a6a; }
+
+  .banner {
+    margin: 14px 0 0; padding: 12px 14px; border-radius: 14px;
+    background: rgba(255, 106, 106, .12); border: 1px solid rgba(255, 106, 106, .35);
+    font-size: 14px;
+  }
+  .banner code { background: rgba(0, 0, 0, .3); padding: 1px 6px; border-radius: 6px; }
+
+  /* ── 營火舞台 ── */
+  .stage {
+    position: relative;
+    height: 250px;
+    margin: 8px -16px 0;
+    overflow: hidden;
+  }
+  .stage .pines { position: absolute; left: 0; right: 0; bottom: 34px; height: 120px; color: #0f1b30; }
+  .stage .ground {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 46px;
+    background: linear-gradient(180deg, #1a2a3f, #0d1626);
+    border-radius: 50% 50% 0 0 / 30px 30px 0 0;
+  }
+  .stage .tent { position: absolute; bottom: 26px; width: 104px; height: 84px; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .4)); }
+  .stage .tent.boy { left: max(4px, calc(50% - 190px)); color: var(--boy-deep); }
+  .stage .tent.girl { right: max(4px, calc(50% - 190px)); color: var(--girl-deep); }
+  .glow {
+    position: absolute; left: 50%; bottom: 10px;
+    width: 340px; height: 340px; margin-left: -170px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 150, 60, .55) 0%, rgba(255, 110, 40, .2) 35%, transparent 65%);
+    transform-origin: 50% 80%;
+    pointer-events: none;
+  }
+  .campfire {
+    position: absolute; left: 50%; bottom: 8px;
+    width: 180px; height: 170px; margin-left: -90px;
+    overflow: visible;
+  }
+  .flames { transform-box: view-box; transform-origin: 80px 122px; }
+  .flick { transform-box: view-box; transform-origin: 80px 122px; animation: flick 1.15s ease-in-out infinite; }
+  .flick.f2 { animation-duration: .85s; animation-delay: -.3s; }
+  .flick.f3 { animation-duration: 1.4s; animation-delay: -.6s; }
+  @keyframes flick {
+    0%, 100% { transform: scale(1, 1) skewX(0deg); }
+    25% { transform: scale(.96, 1.06) skewX(2deg); }
+    50% { transform: scale(1.03, .96) skewX(-2deg); }
+    75% { transform: scale(.98, 1.04) skewX(1deg); }
+  }
+
+  /* ── 集氣卡 ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 18px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .section { margin-top: 16px; }
+  .section-title {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--font-display);
+    font-size: 20px; margin: 0 0 12px;
+  }
+  .section-title small { font-family: var(--font-body); font-size: 13px; color: var(--muted); font-weight: 400; margin-left: auto; }
+
+  .fire-card { margin-top: -6px; position: relative; z-index: 2; }
+  .meter-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 14px; color: var(--muted); }
+  .meter-head strong { color: var(--cream); font-size: 22px; font-variant-numeric: tabular-nums; }
+  .meter-head .pct { font-family: var(--font-display); color: var(--amber); font-size: 22px; font-variant-numeric: tabular-nums; }
+  .meter {
+    position: relative; height: 18px; margin: 8px 0 4px;
+    border-radius: 999px; background: rgba(255, 255, 255, .08); overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .08);
+  }
+  .meter-fill {
+    position: absolute; inset: 0 auto 0 0; width: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--ember), var(--fire) 55%, var(--amber));
+    box-shadow: 0 0 16px rgba(255, 123, 46, .6);
+    transition: width .35s ease-out;
+  }
+  .meter-fill::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .45) 50%, transparent 70%);
+    background-size: 200% 100%;
+    animation: shimmer 1.8s linear infinite;
+  }
+  @keyframes shimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+  .meter-note { font-size: 13px; color: var(--muted); min-height: 1.5em; }
+
+  .ignite {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    width: 100%; min-height: 92px; margin-top: 14px; padding: 14px 16px;
+    border: 0; border-radius: 24px;
+    font-family: var(--font-display);
+    font-size: clamp(19px, 5.6vw, 24px); font-weight: 900; line-height: 1.3;
+    color: #3a1500;
+    background: linear-gradient(180deg, #ffe08f 0%, #ffad4d 45%, #ff7b2e 100%);
+    box-shadow: 0 8px 0 #b8481a, 0 18px 40px rgba(255, 120, 40, .45), inset 0 2px 0 rgba(255, 255, 255, .6);
+    touch-action: manipulation;
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    transition: transform .06s, box-shadow .06s;
+  }
+  .ignite .sub { font-family: var(--font-body); font-size: 13px; font-weight: 500; opacity: .8; }
+  .ignite.active { animation: breathe 1.6s ease-in-out infinite; }
+  .ignite.bump { transform: translateY(5px) scale(.985); box-shadow: 0 3px 0 #b8481a, 0 10px 26px rgba(255, 120, 40, .5), inset 0 2px 0 rgba(255, 255, 255, .6); animation: none; }
+  @keyframes breathe {
+    0%, 100% { box-shadow: 0 8px 0 #b8481a, 0 18px 40px rgba(255, 120, 40, .45), inset 0 2px 0 rgba(255, 255, 255, .6); }
+    50% { box-shadow: 0 8px 0 #b8481a, 0 18px 60px rgba(255, 140, 50, .8), inset 0 2px 0 rgba(255, 255, 255, .6); }
+  }
+  .ignite:disabled {
+    cursor: default;
+    color: var(--muted);
+    font-size: 17px;
+    background: rgba(255, 255, 255, .05);
+    border: 1px dashed rgba(255, 255, 255, .22);
+    box-shadow: none;
+    animation: none;
+  }
+  .ignite:focus-visible { outline: 3px solid var(--amber); outline-offset: 4px; }
+
+  .mine {
+    display: flex; justify-content: center; align-items: center; gap: 8px;
+    margin-top: 12px; font-size: 14px; color: var(--muted);
+  }
+  .mine strong { color: var(--amber); font-size: 20px; font-variant-numeric: tabular-nums; }
+
+  .plus {
+    position: fixed; z-index: 31; pointer-events: none;
+    font-family: var(--font-display); font-weight: 900; font-size: 26px;
+    color: var(--amber); text-shadow: 0 0 10px rgba(255, 140, 50, .9), 0 2px 0 rgba(0, 0, 0, .35);
+    transform: translate(-50%, -50%);
+    animation: floatUp .9s ease-out forwards;
+  }
+  @keyframes floatUp {
+    0% { opacity: 0; transform: translate(-50%, -30%) scale(.6); }
+    15% { opacity: 1; transform: translate(-50%, -70%) scale(1.15); }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), -260%) scale(.9); }
+  }
+
+  /* ── 投票 ── */
+  .field { margin-bottom: 14px; }
+  .field label.lbl { display: block; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+  .input {
+    width: 100%; padding: 12px 14px; border-radius: 14px;
+    background: rgba(0, 0, 0, .25); border: 1px solid rgba(255, 255, 255, .15);
+    font-size: 16px; outline: none;
+  }
+  .input:focus { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(255, 193, 99, .2); }
+  textarea.input { resize: none; min-height: 76px; }
+  .counter { text-align: right; font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .team-opt { position: relative; min-width: 0; }
+  .team-opt input { position: absolute; opacity: 0; pointer-events: none; }
+  .team-opt label {
+    display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+    padding: 14px 8px 12px; border-radius: 16px; cursor: pointer;
+    background: rgba(0, 0, 0, .2); border: 2px solid rgba(255, 255, 255, .12);
+    transition: border-color .15s, background .15s, transform .15s;
+  }
+  .team-opt svg { width: 64px; height: 52px; }
+  .team-opt .t1 { font-weight: 700; font-size: 15px; }
+  .team-opt .t2 { font-size: 13px; color: var(--muted); }
+  .team-opt.boy svg { color: var(--boy-deep); }
+  .team-opt.girl svg { color: var(--girl-deep); }
+  .team-opt.boy input:checked + label { border-color: var(--boy); background: rgba(95, 176, 255, .16); box-shadow: 0 0 20px rgba(95, 176, 255, .3); }
+  .team-opt.girl input:checked + label { border-color: var(--girl); background: rgba(255, 143, 196, .16); box-shadow: 0 0 20px rgba(255, 143, 196, .3); }
+  .team-opt input:focus-visible + label { outline: 3px solid var(--amber); outline-offset: 2px; }
+  .team-opt input:checked + label { transform: translateY(-2px); }
+
+  .btn {
+    width: 100%; min-height: 50px; border: 0; border-radius: 14px;
+    font-weight: 700; font-size: 16px;
+    background: var(--cream); color: #2a1c10;
+  }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .btn.ghost { background: rgba(255, 255, 255, .08); color: var(--cream); border: 1px solid rgba(255, 255, 255, .18); }
+
+  .voted { text-align: center; padding: 6px 0; }
+  .voted .big { font-family: var(--font-display); font-size: 20px; margin: 6px 0; }
+  .voted p { margin: 0; color: var(--muted); font-size: 14px; }
+
+  /* ── 票數比例 ── */
+  .tally-legend { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; gap: 8px; }
+  .tally-legend .b { color: var(--boy); }
+  .tally-legend .g { color: var(--girl); text-align: right; }
+  .tally-legend strong { font-size: 18px; font-variant-numeric: tabular-nums; }
+  .tally-bar { display: flex; height: 30px; border-radius: 999px; overflow: hidden; background: rgba(255, 255, 255, .08); }
+  .tally-bar > div {
+    display: flex; align-items: center; min-width: 0;
+    font-size: 13px; font-weight: 700; color: #0b1026; white-space: nowrap;
+    transition: width .5s ease;
+  }
+  .tally-bar .b { background: linear-gradient(90deg, var(--boy-deep), var(--boy)); justify-content: flex-start; padding-left: 10px; }
+  .tally-bar .g { background: linear-gradient(90deg, var(--girl), var(--girl-deep)); justify-content: flex-end; padding-right: 10px; }
+  .tally-bar.empty > div { opacity: .35; }
+  .tally-foot { margin-top: 8px; font-size: 13px; color: var(--muted); text-align: center; }
+
+  /* ── 祝福牆 ── */
+  .wall { display: grid; gap: 10px; }
+  .wish {
+    position: relative;
+    padding: 12px 14px 10px 16px; border-radius: 14px;
+    background: rgba(255, 246, 230, .06); border: 1px solid rgba(255, 255, 255, .08);
+    border-left: 4px solid var(--tc, var(--amber));
+    animation: popIn .35s ease-out both;
+  }
+  .wish.BOY { --tc: var(--boy); }
+  .wish.GIRL { --tc: var(--girl); }
+  .wish-head { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .wish-head .name { color: var(--cream); font-weight: 700; font-size: 14px; }
+  .wish-head .tag { font-size: 11px; padding: 1px 8px; border-radius: 999px; color: #0b1026; background: var(--tc); }
+  .wish-head .time { margin-left: auto; font-size: 12px; }
+  .wish p { margin: 6px 0 0; font-size: 15px; word-break: break-word; }
+  .empty { text-align: center; color: var(--muted); padding: 18px 8px; font-size: 14px; }
+  @keyframes popIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  footer { margin-top: 28px; text-align: center; font-size: 12px; color: rgba(185, 192, 224, .6); }
+
+  /* ── 倒數與揭曉 ── */
+  .overlay {
+    position: fixed; inset: 0; z-index: 60;
+    display: none; place-items: center;
+    padding: 16px;
+    background: rgba(5, 8, 20, .88);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  .overlay.show { display: grid; }
+  .countdown { text-align: center; }
+  .countdown .msg { font-family: var(--font-display); font-size: 20px; color: var(--amber); margin-bottom: 8px; }
+  .countdown .num {
+    font-family: var(--font-display); font-weight: 900;
+    font-size: min(46vw, 240px); line-height: 1;
+    color: var(--cream);
+    text-shadow: 0 0 40px rgba(255, 140, 50, .9), 0 0 90px rgba(255, 90, 30, .6);
+  }
+  .countdown .num.go { animation: cd 1s ease-out both; }
+  @keyframes cd {
+    0% { transform: scale(2.2); opacity: 0; }
+    20% { transform: scale(1); opacity: 1; }
+    80% { transform: scale(.92); opacity: 1; }
+    100% { transform: scale(.6); opacity: 0; }
+  }
+
+  #reveal { z-index: 70; overflow-y: auto; }
+  .reveal-card {
+    position: relative;
+    width: min(100%, 400px);
+    padding: 26px 22px 22px;
+    border-radius: 28px;
+    text-align: center;
+    color: #1b1f3a;
+    background: linear-gradient(165deg, #ffffff 0%, var(--rc-1) 55%, var(--rc-2) 100%);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .5), 0 0 0 6px rgba(255, 255, 255, .15);
+    animation: cardIn .7s cubic-bezier(.2, 1.4, .4, 1) both;
+  }
+  #reveal.BOY { --rc-1: #dcedff; --rc-2: #a9d2ff; --rc-accent: #2f7de1; }
+  #reveal.GIRL { --rc-1: #ffe3f0; --rc-2: #ffb6d6; --rc-accent: #e04a90; }
+  @keyframes cardIn { from { opacity: 0; transform: scale(.7) translateY(30px); } to { opacity: 1; transform: none; } }
+  .reveal-card .rc-top { font-size: 13px; letter-spacing: .1em; color: #5b5f7e; }
+  .reveal-card .rc-emoji { font-size: 64px; line-height: 1; margin: 14px 0 6px; }
+  .reveal-card h2 {
+    font-family: var(--font-display);
+    font-size: clamp(26px, 8vw, 34px); line-height: 1.25; margin: 0;
+  }
+  .reveal-card h2 em { font-style: normal; color: var(--rc-accent); font-size: 1.6em; white-space: nowrap; }
+  .reveal-card .rc-pun {
+    display: inline-block; margin: 10px 0 0; padding: 4px 14px; border-radius: 999px;
+    background: var(--rc-accent); color: #fff; font-weight: 700; font-size: 14px;
+  }
+  .reveal-card .rc-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+    margin: 18px 0 4px; padding: 12px 6px; border-radius: 16px; background: rgba(255, 255, 255, .6);
+  }
+  .reveal-card .rc-stats b { display: block; font-size: 20px; color: var(--rc-accent); font-variant-numeric: tabular-nums; }
+  .reveal-card .rc-stats span { font-size: 12px; color: #5b5f7e; }
+  .reveal-card .rc-date { font-size: 12px; color: #6d7190; margin-top: 10px; }
+  .reveal-card .rc-actions { display: flex; gap: 8px; margin-top: 16px; }
+  .reveal-card .rc-actions button { flex: 1; min-height: 46px; border-radius: 14px; border: 0; font-weight: 700; }
+  .reveal-card .rc-actions .primary { background: var(--rc-accent); color: #fff; }
+  .reveal-card .rc-actions .secondary { background: rgba(27, 31, 58, .08); color: #1b1f3a; }
+
+  /* ── 預覽/主持人工具列 ── */
+  .toolbar {
+    position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 40;
+    max-width: 536px; margin: 0 auto;
+    padding: 10px 12px; border-radius: 16px;
+    background: rgba(20, 24, 50, .92); border: 1px solid rgba(255, 193, 99, .35);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+    font-size: 13px;
+  }
+  .toolbar .tb-title { display: flex; justify-content: space-between; gap: 8px; color: var(--amber); font-weight: 700; margin-bottom: 8px; }
+  .toolbar .tb-title span { color: var(--muted); font-weight: 400; }
+  .toolbar .tb-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+  .toolbar button {
+    flex: 1 1 auto; min-height: 36px; padding: 6px 10px; border-radius: 10px;
+    background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .16);
+    font-size: 13px;
+  }
+  .toolbar button.warn { border-color: rgba(255, 106, 106, .5); color: #ffb3b3; }
+
+  .toast {
+    position: fixed; left: 50%; top: calc(16px + env(safe-area-inset-top)); z-index: 90;
+    transform: translate(-50%, -140%);
+    max-width: calc(100% - 32px);
+    padding: 10px 16px; border-radius: 999px;
+    background: var(--cream); color: #2a1c10; font-weight: 700; font-size: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .4);
+    transition: transform .3s ease;
+  }
+  .toast.show { transform: translate(-50%, 0); }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* ── 桌機：左營火、右投票與留言 ── */
+  @media (min-width: 960px) {
+    .page { max-width: 1080px; }
+    .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+    .col-fire { position: sticky; top: 12px; }
+    .col-social .section:first-child { margin-top: 0; }
+    .stage { margin: 8px 0 0; border-radius: 24px 24px 0 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bulb, .flick, .meter-fill::after, .ignite.active { animation: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="tent" viewBox="0 0 100 80">
+      <path d="M50 6 L95 76 H5 Z" fill="currentColor"/>
+      <path d="M50 6 L95 76 H72 Z" fill="#000" opacity=".2"/>
+      <path d="M50 30 L65 76 H35 Z" fill="#ffcf7a"/>
+      <path d="M50 30 L65 76 H50 Z" fill="#f2a64a"/>
+      <path d="M50 6 V30" stroke="#fff" stroke-opacity=".35" stroke-width="2"/>
+      <path d="M43 1 L50 6 L57 1" stroke="#fff6e6" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <rect x="0" y="75" width="100" height="3" rx="1.5" fill="#000" opacity=".25"/>
+    </symbol>
+    <symbol id="pine" viewBox="0 0 40 80">
+      <path d="M20 0 L34 26 H27 L38 46 H29 L40 68 H0 L11 46 H2 L13 26 H6 Z" fill="currentColor"/>
+      <rect x="17" y="67" width="6" height="13" fill="currentColor"/>
+    </symbol>
+    <linearGradient id="gOuter" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#ff4d2e"/>
+      <stop offset=".6" stop-color="#ff7b2e"/>
+      <stop offset="1" stop-color="#ffb04d" stop-opacity=".9"/>
+    </linearGradient>
+    <linearGradient id="gMid" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#ff9a3c"/>
+      <stop offset="1" stop-color="#ffd166"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div class="page">
+  <div class="lights" id="lights" aria-hidden="true"></div>
+
+  <header>
+    <span class="eyebrow">⛺ 線上露營 · 性別揭曉趴</span>
+    <h1><span class="hl">小台積電股票</span>的<br>露營性別趴</h1>
+    <p class="subtitle">圍著營火猜一猜：是漲停男寶，還是績優女寶？</p>
+    <div class="conn" id="conn">連線營地中…</div>
+    <div class="banner" id="setupBanner" hidden>
+      尚未設定後端：請在程式開頭填好 <code>GAS_WEB_APP_URL</code> 或 JSONbin 設定。<br>
+      想先試玩？在網址後面加上 <code>?preview=boy</code> 或 <code>?preview=girl</code>。
+    </div>
+  </header>
+
+  <div class="layout">
+    <div class="col-fire">
+      <div class="stage" aria-hidden="true">
+        <svg class="pines" viewBox="0 0 400 120" preserveAspectRatio="xMidYMax slice">
+          <use href="#pine" x="0" y="30" width="45" height="90"/>
+          <use href="#pine" x="30" y="10" width="55" height="110"/>
+          <use href="#pine" x="80" y="45" width="38" height="75"/>
+          <use href="#pine" x="282" y="40" width="40" height="80"/>
+          <use href="#pine" x="312" y="8" width="56" height="112"/>
+          <use href="#pine" x="356" y="34" width="44" height="86"/>
+        </svg>
+        <div class="glow" id="glow"></div>
+        <div class="ground"></div>
+        <svg class="tent boy"><use href="#tent"/></svg>
+        <svg class="tent girl"><use href="#tent"/></svg>
+        <svg class="campfire" id="campfire" viewBox="0 0 160 150">
+          <g id="flames" class="flames">
+            <g class="flick f3">
+              <path d="M58 58 C66 74 70 86 68 100 C66 110 61 115 56 113 C50 109 48 99 52 87 C54 79 58 70 58 58 Z" fill="#ff6a2e" opacity=".9"/>
+              <path d="M102 58 C94 74 90 86 92 100 C94 110 99 115 104 113 C110 109 112 99 108 87 C106 79 102 70 102 58 Z" fill="#ff6a2e" opacity=".9"/>
+            </g>
+            <g class="flick">
+              <path d="M80 16 C96 46 118 62 112 94 C108 114 96 122 80 122 C64 122 52 114 48 94 C42 62 64 46 80 16 Z" fill="url(#gOuter)"/>
+            </g>
+            <g class="flick f2">
+              <path d="M80 44 C92 64 104 76 100 98 C97 112 90 120 80 120 C70 120 63 112 60 98 C56 76 68 64 80 44 Z" fill="url(#gMid)"/>
+              <path d="M80 72 C87 84 93 92 91 105 C89 114 85 118 80 118 C75 118 71 114 69 105 C67 92 73 84 80 72 Z" fill="#fff3b0"/>
+            </g>
+          </g>
+          <g>
+            <rect x="30" y="113" width="100" height="14" rx="7" fill="#7a4a2b" transform="rotate(-13 80 120)"/>
+            <rect x="30" y="113" width="100" height="14" rx="7" fill="#8f5a35" transform="rotate(13 80 120)"/>
+            <circle cx="33" cy="131" r="3.5" fill="#5a3520" transform="rotate(13 80 120)"/>
+            <circle cx="127" cy="131" r="3.5" fill="#5a3520" transform="rotate(-13 80 120)"/>
+          </g>
+          <g fill="#4b5470">
+            <ellipse cx="34" cy="138" rx="12" ry="7"/>
+            <ellipse cx="56" cy="142" rx="11" ry="6.5" fill="#5d6684"/>
+            <ellipse cx="80" cy="144" rx="12" ry="6.5"/>
+            <ellipse cx="104" cy="142" rx="11" ry="6.5" fill="#5d6684"/>
+            <ellipse cx="126" cy="138" rx="12" ry="7"/>
+          </g>
+        </svg>
+      </div>
+
+      <section class="card fire-card" aria-labelledby="fireTitle">
+        <h2 class="sr-only" id="fireTitle">全體集氣</h2>
+        <div class="meter-head">
+          <span>全體集氣 <strong id="total">0</strong> / <span id="target">—</span></span>
+          <span class="pct" id="pct">0%</span>
+        </div>
+        <div class="meter" role="progressbar" aria-label="全體集氣進度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="meter">
+          <div class="meter-fill" id="meterFill"></div>
+        </div>
+        <div class="meter-note" id="meterNote">&nbsp;</div>
+
+        <button class="ignite" id="ignite" type="button" disabled>
+          <span class="main" id="igniteMain">連線營地中…</span>
+          <span class="sub" id="igniteSub"></span>
+        </button>
+
+        <div class="mine">我的貢獻 🔥 <strong id="mine">0</strong> 下</div>
+      </section>
+    </div>
+
+    <div class="col-social">
+      <section class="section card" aria-labelledby="voteTitle">
+        <h2 class="section-title" id="voteTitle">🏕️ 選邊站：你猜是？</h2>
+        <form id="voteForm" novalidate>
+          <div class="field">
+            <label class="lbl" for="nick">你的暱稱</label>
+            <input class="input" id="nick" name="nickname" maxlength="20" autocomplete="nickname" placeholder="例如：愛買零股的阿姨" required>
+          </div>
+          <div class="field">
+            <span class="lbl" style="display:block;font-size:14px;color:var(--muted);margin-bottom:6px">選擇你的帳篷</span>
+            <div class="teams" role="radiogroup" aria-label="選擇陣營">
+              <div class="team-opt boy">
+                <input type="radio" name="team" id="teamBoy" value="BOY">
+                <label for="teamBoy">
+                  <svg><use href="#tent"/></svg>
+                  <span class="t1">Team Boy 藍色帳篷</span>
+                  <span class="t2">漲停男寶 📈</span>
+                </label>
+              </div>
+              <div class="team-opt girl">
+                <input type="radio" name="team" id="teamGirl" value="GIRL">
+                <label for="teamGirl">
+                  <svg><use href="#tent"/></svg>
+                  <span class="t1">Team Girl 粉色帳篷</span>
+                  <span class="t2">績優女寶 💎</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="wish">給寶寶的一句祝福</label>
+            <textarea class="input" id="wish" name="wish" maxlength="80" placeholder="例如：長期持有，一路長紅！" required></textarea>
+            <div class="counter"><span id="wishCount">0</span> / 80</div>
+          </div>
+          <button class="btn" id="voteBtn" type="submit">把祝福丟進營火 🔥</button>
+        </form>
+        <div class="voted" id="votedBox" hidden></div>
+      </section>
+
+      <section class="section card" aria-labelledby="tallyTitle">
+        <h2 class="section-title" id="tallyTitle">⛺ 帳篷人氣 <small id="tallyTotal">0 人投票</small></h2>
+        <div class="tally-legend">
+          <span class="b">💙 Team Boy<br><strong id="boyCount">0</strong> 票</span>
+          <span class="g">Team Girl 💗<br><strong id="girlCount">0</strong> 票</span>
+        </div>
+        <div class="tally-bar empty" id="tallyBar">
+          <div class="b" id="boyBar" style="width:50%">50%</div>
+          <div class="g" id="girlBar" style="width:50%">50%</div>
+        </div>
+      </section>
+
+      <section class="section card" aria-labelledby="wallTitle">
+        <h2 class="section-title" id="wallTitle">🔥 營火祝福牆 <small id="wallCount"></small></h2>
+        <div class="wall" id="wall"><div class="empty">還沒有人留言，來當第一位圍著營火的人吧！</div></div>
+      </section>
+    </div>
+  </div>
+
+  <footer>Made with 🔥 for 小台積電股票 · 長期持有，一路長紅</footer>
+</div>
+
+<div class="overlay" id="countdown" aria-live="assertive">
+  <div class="countdown">
+    <div class="msg">全體集氣達標！營火即將揭曉…</div>
+    <div class="num" id="cdNum">3</div>
+  </div>
+</div>
+
+<div class="overlay" id="reveal" role="dialog" aria-modal="true" aria-labelledby="revealTitle">
+  <div class="reveal-card">
+    <div class="rc-top">⛺ 小台積電股票的露營性別趴</div>
+    <div class="rc-emoji" id="rcEmoji">👶</div>
+    <h2 id="revealTitle">小台積電股票是<br><em id="rcGender">—</em>！</h2>
+    <div class="rc-pun" id="rcPun"></div>
+    <div class="rc-stats">
+      <div><b id="rcTotal">0</b><span>全體集氣</span></div>
+      <div><b id="rcRight">0</b><span>猜中人數</span></div>
+      <div><b id="rcMine">0</b><span>我的貢獻</span></div>
+    </div>
+    <div class="rc-date" id="rcDate"></div>
+    <div class="rc-actions">
+      <button class="secondary" id="rcClose" type="button">回到營地</button>
+      <button class="primary" id="rcAgain" type="button">再放一次煙火 🎆</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ============================================================
+ * 後端設定：BACKEND 填 'jsonbin' 或 'gas'
+ * ============================================================ */
+const BACKEND = 'jsonbin';
+
+// Google Apps Script（BACKEND = 'gas'）
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/PASTE_YOUR_DEPLOYMENT_ID/exec';
+
+// JSONbin（BACKEND = 'jsonbin'）
+// 金鑰會隨網頁公開，任何打開原始碼的人都能用它讀寫這個 bin（包含 gender 欄位）。
+// 建議到 JSONbin 後台建立只勾 Bins Read / Update 的 Access Key，並把 JSONBIN_KEY_HEADER 改成 'X-Access-Key'。
+const JSONBIN_BIN_ID = '6afc1ae8ffd5d16053c7eb32';
+const JSONBIN_KEY = '$2a$10$JyWJ5HkVjGLlbxKkJmiqu.NqaX/Cu.mVjl08MB3KjqhY9LbClV8OO';
+const JSONBIN_KEY_HEADER = 'X-Master-Key';
+
+const BATCH_INTERVAL_MS = 1500;   // 點擊批次送出間隔
+const POLL_INTERVAL_MS = 2000;    // 前景輪詢間隔
+const POLL_HIDDEN_MS = 8000;      // 分頁在背景時的輪詢間隔
+const POLL_AFTER_REVEAL_MS = 15000;
+const MAX_DELTA_PER_BATCH = 60;   // 需與 Code.gs 相同
+const REQUEST_TIMEOUT_MS = 10000;
+
+const params = new URLSearchParams(location.search);
+const PREVIEW = { boy: 'BOY', girl: 'GIRL' }[(params.get('preview') || '').toLowerCase()] || null;
+const HOST_KEY = params.get('host') || '';
+const KEEPER = params.has('keeper');
+const GAS_READY = /^https:\/\/script\.google\.com\/macros\/s\/(?!PASTE_)[\w-]+\/exec/.test(GAS_WEB_APP_URL);
+const JSONBIN_READY = /^[a-f0-9]{24}$/i.test(JSONBIN_BIN_ID) && JSONBIN_KEY.length > 10;
+const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const $ = (id) => document.getElementById(id);
+const els = {
+  conn: $('conn'), setupBanner: $('setupBanner'),
+  total: $('total'), target: $('target'), pct: $('pct'), meter: $('meter'), meterFill: $('meterFill'), meterNote: $('meterNote'),
+  ignite: $('ignite'), igniteMain: $('igniteMain'), igniteSub: $('igniteSub'), mine: $('mine'),
+  campfire: $('campfire'), flames: $('flames'), glow: $('glow'),
+  voteForm: $('voteForm'), nick: $('nick'), wish: $('wish'), wishCount: $('wishCount'), voteBtn: $('voteBtn'), votedBox: $('votedBox'),
+  boyCount: $('boyCount'), girlCount: $('girlCount'), boyBar: $('boyBar'), girlBar: $('girlBar'), tallyBar: $('tallyBar'), tallyTotal: $('tallyTotal'),
+  wall: $('wall'), wallCount: $('wallCount'),
+  countdown: $('countdown'), cdNum: $('cdNum'),
+  reveal: $('reveal'), rcEmoji: $('rcEmoji'), rcGender: $('rcGender'), rcPun: $('rcPun'),
+  rcTotal: $('rcTotal'), rcRight: $('rcRight'), rcMine: $('rcMine'), rcDate: $('rcDate'), rcClose: $('rcClose'), rcAgain: $('rcAgain'),
+  toast: $('toast'),
+};
+
+/* ---------- 小工具 ---------- */
+const store = {
+  get(k, d = null) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch { /* 隱私模式等情況忽略 */ } },
+};
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const fmt = (n) => Number(n || 0).toLocaleString('zh-TW');
+const vibrate = (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch { /* 不支援時忽略 */ } };
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+const clampInt = (v, d, min, max) => { const n = parseInt(v, 10); return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : d; };
+const normGender = (v) => { const s = String(v ?? '').trim().toUpperCase(); return s === 'BOY' || s === 'GIRL' ? s : null; };
+const toBool = (v) => v === true || String(v ?? '').trim().toUpperCase() === 'TRUE';
+const cutText = (v, max) => Array.from(String(v ?? '').replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim()).slice(0, max).join('');
+
+function timeAgo(ts) {
+  if (!ts) return '';
+  const s = Math.max(0, (Date.now() - ts) / 1000);
+  if (s < 60) return '剛剛';
+  if (s < 3600) return `${Math.floor(s / 60)} 分鐘前`;
+  if (s < 86400) return `${Math.floor(s / 3600)} 小時前`;
+  return `${Math.floor(s / 86400)} 天前`;
+}
+
+let toastTimer;
+function toast(msg) {
+  els.toast.textContent = msg;
+  els.toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => els.toast.classList.remove('show'), 2600);
+}
+
+const CLIENT_ID = store.get('tsmc_client_id') || (() => { const id = uid(); store.set('tsmc_client_id', id); return id; })();
+
+/* ============================================================
+ * API 層：正式環境打 GAS；?preview= 時改用本機模擬後端
+ * ============================================================ */
+function createGasApi(url) {
+  async function request(input, init) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      const res = await fetch(input, { ...init, signal: ctrl.signal, cache: 'no-store', redirect: 'follow' });
+      if (!res.ok) throw new Error('http_' + res.status);
+      return await res.json();
+    } finally {
+      clearTimeout(t);
+    }
+  }
+  return {
+    getState: () => request(`${url}?t=${Date.now()}`),
+    // text/plain 屬於 CORS simple request，不會觸發 GAS 無法處理的 OPTIONS 預檢
+    post: (body) => request(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+    }),
+  };
+}
+
+function createMockApi(gender) {
+  const now = Date.now();
+  const s = {
+    isActive: false,
+    current: 0,
+    target: clampInt(params.get('target'), 100, 5, 100000),
+    force: false,
+    crowd: true,
+    votes: [
+      { name: '阿公', team: 'BOY', wish: '健康平安，像台積電一樣穩穩成長！', ts: now - 3600e3 * 5 },
+      { name: '阿嬤', team: 'GIRL', wish: '乖乖吃飯、好好睡覺，阿嬤包大紅包！', ts: now - 3600e3 * 3 },
+      { name: '大學室友阿哲', team: 'BOY', wish: '未來的護國神山就是你', ts: now - 60e3 * 50 },
+      { name: '愛買零股的阿姨', team: 'GIRL', wish: '長期持有，一路長紅 📈', ts: now - 60e3 * 12 },
+      { name: '同事小美', team: 'GIRL', wish: '歡迎加入地球！我們都好期待見到你～', ts: now - 60e3 * 3 },
+    ],
+  };
+  const revealed = () => s.current >= s.target || s.force;
+  const pub = () => {
+    const r = revealed();
+    return {
+      is_active: s.isActive,
+      current_clicks: s.current,
+      target_clicks: s.target,
+      revealed: r,
+      awaiting_gender: false,
+      gender: r ? gender : null,
+      votes: { boy: s.votes.filter((v) => v.team === 'BOY').length, girl: s.votes.filter((v) => v.team === 'GIRL').length },
+      wishes: s.votes.slice().reverse().slice(0, 60),
+      server_time: Date.now(),
+    };
+  };
+  const reply = async (obj) => { await sleep(120 + Math.random() * 260); return JSON.parse(JSON.stringify(obj)); };
+
+  // 模擬其他親友也在狂點
+  setInterval(() => {
+    if (s.isActive && s.crowd && !revealed()) s.current += Math.floor(Math.random() * 4);
+  }, 1000);
+
+  return {
+    getState: () => reply({ ok: true, state: pub() }),
+    post(body) {
+      if (body.action === 'click') {
+        if (!s.isActive) return reply({ ok: true, accepted: false, reason: 'inactive', state: pub() });
+        if (revealed()) return reply({ ok: true, accepted: false, reason: 'revealed', state: pub() });
+        s.current += Math.min(MAX_DELTA_PER_BATCH, body.delta | 0);
+        return reply({ ok: true, accepted: true, state: pub() });
+      }
+      if (body.action === 'vote') {
+        if (revealed()) return reply({ ok: false, error: 'voting_closed' });
+        s.votes.push({ name: body.nickname, team: body.team, wish: body.wish, ts: Date.now() });
+        return reply({ ok: true, state: pub() });
+      }
+      return reply({ ok: false, error: 'unknown_action' });
+    },
+    control: {
+      activate() { s.isActive = true; },
+      deactivate() { s.isActive = false; },
+      add(n) { s.current += n; },
+      fill() { s.current = Math.max(s.current, s.target); },
+      toggleCrowd() { s.crowd = !s.crowd; return s.crowd; },
+    },
+  };
+}
+
+/**
+ * JSONbin 後端：沒有伺服器邏輯，每次寫入都是「讀最新 → 改自己的欄位 → PUT 整份」。
+ *
+ * bin 結構：
+ * {
+ *   "gender": "",            // 保密人在達標後才用 ?keeper 頁面寫入
+ *   "is_active": false,
+ *   "target_clicks": 200,
+ *   "force_reveal": false,
+ *   "base_clicks": 0,        // 選填：手動加的基礎點數
+ *   "round": "",             // 彩排歸零時更換，讓所有裝置的點擊數重新起算
+ *   "clicks": { "<裝置 ID>": 累計點擊數 },
+ *   "votes":  { "<裝置 ID>": { nickname, team, wish, ts } }
+ * }
+ *
+ * 每台裝置只寫自己那一格，且點擊數是累計值；兩台同時 PUT 互相覆蓋時，
+ * 被蓋掉的一方在下次輪詢發現自己的值變少，會自動補寫回去，總數最終會收斂。
+ */
+function createJsonbinApi() {
+  const base = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
+  const auth = { [JSONBIN_KEY_HEADER]: JSONBIN_KEY };
+  const me = CLIENT_ID;
+  const loadJson = (k) => { try { return JSON.parse(store.get(k) || 'null'); } catch { return null; } };
+
+  let myVote = loadJson('tsmc_jb_vote');
+  let myRound = store.get('tsmc_jb_round', '');
+  let myConfirmed = clampInt(store.get('tsmc_jb_clicks'), 0, 0, 1e9);
+  let lastBatchId = '';
+  let lastHeal = 0;
+  const saveMine = () => { store.set('tsmc_jb_round', myRound); store.set('tsmc_jb_clicks', String(myConfirmed)); };
+
+  async function request(url, init = {}) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      const res = await fetch(url, { ...init, signal: ctrl.signal, cache: 'no-store' });
+      if (!res.ok) throw new Error('http_' + res.status);
+      return await res.json();
+    } finally {
+      clearTimeout(t);
+    }
+  }
+  const unwrap = (r) => (r && r.record && typeof r.record === 'object' ? r.record : r);
+
+  function normalize(raw) {
+    const r = raw && typeof raw === 'object' ? raw : {};
+    const clicks = {};
+    if (r.clicks && typeof r.clicks === 'object') {
+      for (const [k, v] of Object.entries(r.clicks)) {
+        const n = Math.floor(Number(v));
+        if (n > 0) clicks[k] = Math.min(n, 1e7);
+      }
+    }
+    const votes = {};
+    // 相容舊版陣列格式 [{ nickname, team, blessing, time }]
+    const src = Array.isArray(r.votes)
+      ? r.votes.map((v, i) => ['legacy_' + i, v])
+      : Object.entries(r.votes && typeof r.votes === 'object' ? r.votes : {});
+    for (const [k, v] of src) {
+      if (!v || typeof v !== 'object') continue;
+      const team = normGender(v.team);
+      const nickname = cutText(v.nickname ?? v.name, 20);
+      if (!team || !nickname) continue;
+      votes[k] = { nickname, team, wish: cutText(v.wish ?? v.blessing, 80), ts: Number(v.ts) || Date.parse(v.time) || 0 };
+    }
+    return {
+      gender: normGender(r.gender),
+      is_active: toBool(r.is_active),
+      target_clicks: clampInt(r.target_clicks, 200, 1, 1e7),
+      force_reveal: toBool(r.force_reveal),
+      base_clicks: clampInt(r.base_clicks, 0, 0, 1e7),
+      round: String(r.round ?? ''),
+      clicks,
+      votes,
+    };
+  }
+
+  /** 對齊本機記錄：換 round 就歸零；bin 裡自己的值較大（例如清過瀏覽器資料）就採用。 */
+  function sync(rec) {
+    const theirs = rec.clicks[me] || 0;
+    if (rec.round !== myRound) { myRound = rec.round; myConfirmed = theirs; saveMine(); }
+    else if (theirs > myConfirmed) { myConfirmed = theirs; saveMine(); }
+    return rec;
+  }
+
+  function withMine(rec) {
+    const out = { ...rec, clicks: { ...rec.clicks }, votes: { ...rec.votes } };
+    if (myConfirmed > (out.clicks[me] || 0)) out.clicks[me] = myConfirmed;
+    if (myVote && !out.votes[me]) out.votes[me] = myVote;
+    return out;
+  }
+
+  const serialize = (rec) => ({
+    gender: rec.gender || '',
+    is_active: rec.is_active,
+    target_clicks: rec.target_clicks,
+    force_reveal: rec.force_reveal,
+    base_clicks: rec.base_clicks,
+    round: rec.round,
+    clicks: rec.clicks,
+    votes: rec.votes,
+  });
+
+  const totalOf = (rec) => rec.base_clicks + Object.values(rec.clicks).reduce((a, b) => a + b, 0);
+  const isReached = (rec) => totalOf(rec) >= rec.target_clicks || rec.force_reveal;
+  const needsHeal = (rec) => myConfirmed > (rec.clicks[me] || 0) || (myVote && !rec.votes[me]);
+
+  function publicState(rec) {
+    const reached = isReached(rec);
+    const list = Object.values(rec.votes);
+    return {
+      is_active: rec.is_active,
+      current_clicks: totalOf(rec),
+      target_clicks: rec.target_clicks,
+      revealed: reached && !!rec.gender,
+      awaiting_gender: reached && !rec.gender,
+      gender: reached ? rec.gender : null,
+      votes: { boy: list.filter((v) => v.team === 'BOY').length, girl: list.filter((v) => v.team === 'GIRL').length },
+      wishes: list.filter((v) => v.wish).sort((a, b) => b.ts - a.ts).slice(0, 60)
+        .map((v) => ({ name: v.nickname, team: v.team, wish: v.wish, ts: v.ts || null })),
+      server_time: Date.now(),
+    };
+  }
+
+  const read = async () => sync(normalize(unwrap(await request(`${base}/latest`, { headers: auth }))));
+  const write = async (rec) => normalize(unwrap(await request(base, {
+    method: 'PUT',
+    headers: { ...auth, 'Content-Type': 'application/json' },
+    body: JSON.stringify(serialize(withMine(rec))),
+  })));
+
+  return {
+    async getState() {
+      let rec = await read();
+      if (needsHeal(rec) && !isReached(rec) && Date.now() - lastHeal > 3000) {
+        lastHeal = Date.now();
+        try { rec = await write(rec); } catch { /* 下次輪詢再補寫 */ }
+      }
+      return { ok: true, state: publicState(rec) };
+    },
+
+    async post(body) {
+      const rec = await read();
+      switch (body.action) {
+        case 'click': {
+          if (!rec.is_active) return { ok: true, accepted: false, reason: 'inactive', state: publicState(rec) };
+          if (isReached(rec)) return { ok: true, accepted: false, reason: 'revealed', state: publicState(rec) };
+          // 同一批次重送時不重複累加
+          if (body.batch_id !== lastBatchId) {
+            myConfirmed += Math.min(MAX_DELTA_PER_BATCH, Math.max(0, body.delta | 0));
+            lastBatchId = body.batch_id;
+            saveMine();
+          }
+          return { ok: true, accepted: true, state: publicState(await write(rec)) };
+        }
+        case 'vote': {
+          if (isReached(rec)) return { ok: false, error: 'voting_closed' };
+          const nickname = cutText(body.nickname, 20);
+          const wish = cutText(body.wish, 80);
+          const team = normGender(body.team);
+          if (!nickname) return { ok: false, error: 'nickname_required' };
+          if (!team) return { ok: false, error: 'team_required' };
+          if (!wish) return { ok: false, error: 'wish_required' };
+          myVote = { nickname, team, wish, ts: Date.now() };
+          store.set('tsmc_jb_vote', JSON.stringify(myVote));
+          const out = { ...rec, votes: { ...rec.votes } };
+          delete out.votes[me];
+          return { ok: true, state: publicState(await write(out)) };
+        }
+        case 'host': {
+          const out = { ...rec };
+          if (body.op === 'activate') out.is_active = true;
+          else if (body.op === 'deactivate') out.is_active = false;
+          else if (body.op === 'force_reveal') out.force_reveal = true;
+          else if (body.op === 'set_gender') {
+            out.gender = normGender(body.gender);
+            if (!out.gender) return { ok: false, error: 'bad_gender' };
+          } else if (body.op === 'reset') {
+            Object.assign(out, { is_active: false, force_reveal: false, gender: null, base_clicks: 0, clicks: {}, round: uid().slice(0, 8) });
+            myRound = out.round;
+            myConfirmed = 0;
+            saveMine();
+          } else return { ok: false, error: 'unknown_op' };
+          return { ok: true, state: publicState(await write(out)) };
+        }
+        default:
+          return { ok: false, error: 'unknown_action' };
+      }
+    },
+  };
+}
+
+const api = PREVIEW ? createMockApi(PREVIEW)
+  : BACKEND === 'jsonbin' ? (JSONBIN_READY ? createJsonbinApi() : null)
+  : (GAS_READY ? createGasApi(GAS_WEB_APP_URL) : null);
+
+/* ============================================================
+ * 狀態
+ * ============================================================ */
+let state = null;           // 最近一次伺服器公開狀態
+let serverClicks = 0;       // 伺服器確認過的總點擊（單調遞增，避免畫面倒退）
+let pending = 0;            // 尚未打包送出的本機點擊
+let inflight = null;        // 正在送（或失敗待重送）的批次 { id, delta }
+let sending = false;
+let myClicks = clampInt(store.get('tsmc_my_clicks'), 0, 0, 1e9);
+let revealStarted = false;
+let lastWallSig = '';
+
+function displayTotal() {
+  return serverClicks + pending + (inflight ? inflight.delta : 0);
+}
+
+function phase() {
+  if (!api) return 'unconfigured';
+  if (!state) return 'loading';
+  if (state.revealed && state.gender) return 'revealed';
+  if (state.awaiting_gender) return 'awaiting';
+  if (!state.is_active) return 'waiting';
+  return 'active';
+}
+
+function applyState(s) {
+  if (!s || typeof s.current_clicks !== 'number') return;
+  state = s;
+  // 彩排後歸零（current_clicks = 0 且集氣關閉）時接受倒退；其餘取最大值，避免較舊的快取回應讓數字跳回去
+  serverClicks = (s.current_clicks === 0 && !s.is_active) ? 0 : Math.max(serverClicks, s.current_clicks);
+  if (myClicks > serverClicks + pending + (inflight ? inflight.delta : 0)) {
+    myClicks = pending + (inflight ? inflight.delta : 0);
+    store.set('tsmc_my_clicks', String(myClicks));
+  }
+  render();
+  if (phase() === 'revealed' && !revealStarted) startReveal(s.gender);
+}
+
+/* ============================================================
+ * 渲染
+ * ============================================================ */
+let fireBase = 0.6;
+
+function renderMeter() {
+  const target = state ? state.target_clicks : 0;
+  const total = displayTotal();
+  const ratio = target ? Math.min(1, total / target) : 0;
+  const pct = Math.floor(ratio * 100);
+  els.total.textContent = fmt(total);
+  els.target.textContent = target ? fmt(target) : '—';
+  els.pct.textContent = pct + '%';
+  els.meterFill.style.width = pct + '%';
+  els.meter.setAttribute('aria-valuenow', String(pct));
+  els.mine.textContent = fmt(myClicks);
+  fireBase = 0.55 + 0.7 * ratio;
+
+  const p = phase();
+  let note = ' ';
+  if (p === 'waiting') note = '集氣尚未開始，先去投票、留下祝福吧！';
+  else if (p === 'active') note = pct >= 90 ? '🚀 快漲停了！大家再加把勁！' : pct >= 50 ? '🔥 營火越燒越旺，繼續狂點！' : '每一下都在幫營火加柴 🪵';
+  else if (p === 'awaiting') note = '🎯 已達標！等保密人揭曉中…';
+  else if (p === 'revealed') note = '🎉 漲停開獎！';
+  els.meterNote.textContent = note;
+}
+
+function renderButton() {
+  const p = phase();
+  const b = els.ignite;
+  const set = (main, sub, enabled) => {
+    els.igniteMain.textContent = main;
+    els.igniteSub.textContent = sub;
+    b.disabled = !enabled;
+    b.classList.toggle('active', enabled);
+  };
+  if (p === 'unconfigured') set('尚未設定後端', '可先用 ?preview=boy 預覽', false);
+  else if (p === 'loading') set('連線營地中…', '', false);
+  else if (p === 'waiting') set('⏳ 等待露營現場主持人開啟集氣', '親友可先投票留言 ⛺', false);
+  else if (p === 'active') set('🔥 狂點幫小台積電股票集氣！', '點越快，營火越旺', true);
+  else if (p === 'awaiting') set('🎯 集氣達標！', '等待保密人揭曉…', false);
+  else set('🎉 已揭曉！', '點這張卡片可再看一次揭曉', false);
+}
+
+function renderTally() {
+  const boy = state.votes?.boy || 0;
+  const girl = state.votes?.girl || 0;
+  const total = boy + girl;
+  const bp = total ? Math.round((boy / total) * 100) : 50;
+  const gp = 100 - bp;
+  els.boyCount.textContent = fmt(boy);
+  els.girlCount.textContent = fmt(girl);
+  els.tallyTotal.textContent = `${fmt(total)} 人投票`;
+  els.boyBar.style.width = bp + '%';
+  els.girlBar.style.width = gp + '%';
+  els.boyBar.textContent = bp >= 12 ? bp + '%' : '';
+  els.girlBar.textContent = gp >= 12 ? gp + '%' : '';
+  els.tallyBar.classList.toggle('empty', total === 0);
+}
+
+function renderWall(force = false) {
+  const wishes = state.wishes || [];
+  const sig = wishes.length + '|' + (wishes[0] ? wishes[0].ts + wishes[0].name : '');
+  if (!force && sig === lastWallSig) return;
+  const isFirst = lastWallSig === '';
+  lastWallSig = sig;
+
+  els.wallCount.textContent = wishes.length ? `最新 ${wishes.length} 則` : '';
+  els.wall.replaceChildren();
+  if (!wishes.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = '還沒有人留言，來當第一位圍著營火的人吧！';
+    els.wall.append(empty);
+    return;
+  }
+  wishes.forEach((w, i) => {
+    const card = document.createElement('article');
+    card.className = 'wish ' + (w.team || '');
+    if (isFirst || force || i > 0) card.style.animation = 'none';
+
+    const head = document.createElement('div');
+    head.className = 'wish-head';
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = w.name;
+    head.append(name);
+    if (w.team) {
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = w.team === 'BOY' ? 'Team Boy' : 'Team Girl';
+      head.append(tag);
+    }
+    const time = document.createElement('span');
+    time.className = 'time';
+    time.textContent = timeAgo(w.ts);
+    head.append(time);
+
+    const p = document.createElement('p');
+    p.textContent = w.wish;
+    card.append(head, p);
+    els.wall.append(card);
+  });
+}
+
+function renderVoteArea() {
+  const voted = store.get('tsmc_voted_team');
+  const closed = phase() === 'revealed' || phase() === 'awaiting';
+  if (!voted && !closed) {
+    els.voteForm.hidden = false;
+    els.votedBox.hidden = true;
+    return;
+  }
+  els.voteForm.hidden = true;
+  els.votedBox.hidden = false;
+  els.votedBox.replaceChildren();
+  const big = document.createElement('div');
+  big.className = 'big';
+  const p = document.createElement('p');
+  if (voted) {
+    big.textContent = voted === 'BOY' ? '💙 你已加入 Team Boy 藍色帳篷' : '💗 你已加入 Team Girl 粉色帳篷';
+    p.textContent = closed ? '投票已截止，看看你有沒有猜中！' : '謝謝你的祝福！等集氣開始就一起狂點吧 🔥';
+  } else {
+    big.textContent = '投票已截止';
+    p.textContent = '性別已揭曉，謝謝大家圍著營火參與 ⛺';
+  }
+  els.votedBox.append(big, p);
+}
+
+function render() {
+  renderMeter();
+  renderButton();
+  if (state) {
+    renderTally();
+    renderWall();
+    renderVoteArea();
+  }
+}
+
+/* ============================================================
+ * 點擊集氣：本機即時回饋 + 每 1.5 秒批次送出
+ * ============================================================ */
+let boost = 0;
+
+function registerClick(x, y) {
+  if (phase() !== 'active') return;
+  pending++;
+  myClicks++;
+  store.set('tsmc_my_clicks', String(myClicks));
+  boost = Math.min(boost + 0.08, 0.6);
+  vibrate(20);
+  spawnSparks(12);
+  floatPlus(x, y);
+  els.ignite.classList.remove('bump');
+  void els.ignite.offsetWidth;
+  els.ignite.classList.add('bump');
+  renderMeter();
+}
+
+els.ignite.addEventListener('pointerdown', (e) => {
+  if (els.ignite.disabled) return;
+  e.preventDefault();
+  registerClick(e.clientX, e.clientY);
+});
+els.ignite.addEventListener('pointerup', () => setTimeout(() => els.ignite.classList.remove('bump'), 60));
+els.ignite.addEventListener('pointercancel', () => els.ignite.classList.remove('bump'));
+// 鍵盤（Enter / Space）觸發的 click：detail 為 0
+els.ignite.addEventListener('click', (e) => {
+  if (e.detail !== 0) return;
+  const r = els.ignite.getBoundingClientRect();
+  registerClick(r.left + r.width / 2, r.top + r.height / 2);
+});
+els.ignite.addEventListener('contextmenu', (e) => e.preventDefault());
+
+async function flush() {
+  if (!api || sending) return;
+  if (!inflight) {
+    if (pending <= 0) return;
+    const delta = Math.min(pending, MAX_DELTA_PER_BATCH);
+    inflight = { id: uid(), delta };
+    pending -= delta;
+  }
+  sending = true;
+  try {
+    const r = await api.post({ action: 'click', delta: inflight.delta, batch_id: inflight.id });
+    if (r.ok && r.accepted) {
+      inflight = null;
+      setConn(true);
+    } else if (r.ok && !r.accepted) {
+      // 集氣已關閉或已開獎：本機尚未採計的點擊作廢
+      myClicks = Math.max(0, myClicks - inflight.delta - pending);
+      store.set('tsmc_my_clicks', String(myClicks));
+      inflight = null;
+      pending = 0;
+    }
+    // 其他（busy 等）保留 inflight，下一輪用相同 batch_id 重送，後端會去重
+    if (r.state) applyState(r.state);
+  } catch {
+    setConn(false);
+  } finally {
+    sending = false;
+    renderMeter();
+  }
+}
+
+/* ============================================================
+ * 輪詢
+ * ============================================================ */
+let polling = false;
+
+async function poll() {
+  if (!api || polling) return;
+  polling = true;
+  try {
+    const r = await api.getState();
+    if (r.ok) { applyState(r.state); setConn(true); }
+    else setConn(false);
+  } catch {
+    setConn(false);
+  } finally {
+    polling = false;
+  }
+}
+
+async function pollLoop() {
+  await poll();
+  const base = phase() === 'revealed' ? POLL_AFTER_REVEAL_MS : document.hidden ? POLL_HIDDEN_MS : POLL_INTERVAL_MS;
+  setTimeout(pollLoop, base + Math.random() * 300);
+}
+
+function setConn(ok) {
+  els.conn.classList.toggle('ok', ok);
+  els.conn.classList.toggle('bad', !ok);
+  els.conn.textContent = PREVIEW ? `預覽模式（模擬${PREVIEW === 'BOY' ? '男孩' : '女孩'}）` : ok ? '營地連線中' : '連線不穩，重新連線中…';
+}
+
+/* ============================================================
+ * 投票與祝福
+ * ============================================================ */
+els.nick.value = store.get('tsmc_nick', '');
+els.wish.addEventListener('input', () => { els.wishCount.textContent = Array.from(els.wish.value).length; });
+
+const ERRORS = {
+  nickname_required: '請輸入暱稱',
+  team_required: '請選擇一頂帳篷',
+  wish_required: '請寫一句給寶寶的祝福',
+  voting_closed: '已開獎，投票截止囉！',
+  busy: '營地有點擠，請再按一次',
+};
+
+els.voteForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!api) { toast('尚未設定後端'); return; }
+  const nickname = els.nick.value.trim();
+  const team = (els.voteForm.querySelector('input[name="team"]:checked') || {}).value;
+  const wish = els.wish.value.trim();
+  if (!nickname) { toast(ERRORS.nickname_required); els.nick.focus(); return; }
+  if (!team) { toast(ERRORS.team_required); return; }
+  if (!wish) { toast(ERRORS.wish_required); els.wish.focus(); return; }
+
+  els.voteBtn.disabled = true;
+  els.voteBtn.textContent = '送出中…';
+  try {
+    const r = await api.post({ action: 'vote', nickname, team, wish, client_id: CLIENT_ID });
+    if (!r.ok) throw new Error(r.error || 'unknown');
+    store.set('tsmc_nick', nickname);
+    store.set('tsmc_voted_team', team);
+    applyState(r.state);
+    renderVoteArea();
+    toast(team === 'BOY' ? '💙 歡迎加入藍色帳篷！' : '💗 歡迎加入粉色帳篷！');
+    spawnSparks(30);
+  } catch (err) {
+    toast(ERRORS[err.message] || '送出失敗，請稍後再試');
+  } finally {
+    els.voteBtn.disabled = false;
+    els.voteBtn.textContent = '把祝福丟進營火 🔥';
+  }
+});
+
+/* ============================================================
+ * 開獎：3 秒倒數 → 煙火 → 揭曉卡片
+ * ============================================================ */
+async function startReveal(gender) {
+  revealStarted = true;
+  pending = 0;
+  renderButton();
+  els.countdown.classList.add('show');
+  for (const n of [3, 2, 1]) {
+    els.cdNum.textContent = n;
+    els.cdNum.classList.remove('go');
+    void els.cdNum.offsetWidth;
+    els.cdNum.classList.add('go');
+    vibrate(80);
+    await sleep(1000);
+  }
+  els.countdown.classList.remove('show');
+  showRevealCard(gender);
+  fireworks(gender);
+  vibrate([120, 60, 120, 60, 400]);
+}
+
+function showRevealCard(gender) {
+  const boy = gender === 'BOY';
+  els.reveal.classList.remove('BOY', 'GIRL');
+  els.reveal.classList.add(gender);
+  els.rcEmoji.textContent = boy ? '👶🏻💙' : '👶🏻💗';
+  els.rcGender.textContent = boy ? '男孩' : '女孩';
+  els.rcPun.textContent = boy ? '漲停男寶 正式上市 📈' : '績優女寶 正式上市 💎';
+  els.rcTotal.textContent = fmt(state.current_clicks);
+  els.rcRight.textContent = fmt(boy ? state.votes?.boy : state.votes?.girl);
+  els.rcMine.textContent = fmt(myClicks);
+  els.rcDate.textContent = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' }) + ' · 全體親友一起揭曉';
+  els.reveal.classList.add('show');
+  els.rcAgain.focus();
+}
+
+function fireworks(gender, duration = 7000) {
+  if (typeof confetti !== 'function') return;
+  const colors = gender === 'BOY'
+    ? ['#5fb0ff', '#2f7de1', '#a9d2ff', '#ffffff', '#ffd166']
+    : ['#ff8fc4', '#ef5a9d', '#ffc2dc', '#ffffff', '#ffd166'];
+  const base = { colors, zIndex: 200, disableForReducedMotion: true };
+  confetti({ ...base, particleCount: 180, spread: 110, startVelocity: 60, origin: { y: 0.75 } });
+  const end = Date.now() + duration;
+  const iv = setInterval(() => {
+    if (Date.now() > end) { clearInterval(iv); return; }
+    confetti({ ...base, particleCount: 70, spread: 360, startVelocity: 32, ticks: 90, gravity: 0.85, scalar: 1.1,
+      origin: { x: 0.1 + Math.random() * 0.8, y: 0.1 + Math.random() * 0.35 } });
+    confetti({ ...base, particleCount: 10, angle: 60, spread: 55, startVelocity: 55, origin: { x: 0, y: 0.85 } });
+    confetti({ ...base, particleCount: 10, angle: 120, spread: 55, startVelocity: 55, origin: { x: 1, y: 0.85 } });
+  }, 380);
+}
+
+els.rcClose.addEventListener('click', () => els.reveal.classList.remove('show'));
+els.rcAgain.addEventListener('click', () => state?.gender && fireworks(state.gender, 4000));
+els.ignite.parentElement.addEventListener('click', () => {
+  if (phase() === 'revealed' && revealStarted && !els.countdown.classList.contains('show')) showRevealCard(state.gender);
+});
+
+/* ============================================================
+ * 視覺：星空、串燈、火花粒子、+1 飄字
+ * ============================================================ */
+function initLights() {
+  const wrap = $('lights');
+  const colors = ['#ffd166', '#ff8fc4', '#5fb0ff', '#ffb04d', '#9be7a8'];
+  // 容器高 54px、viewBox 高 54，y 座標可直接當 px 使用
+  wrap.innerHTML = '<svg viewBox="0 0 100 54" preserveAspectRatio="none"><path d="M0 6 Q50 66 100 6" fill="none" stroke="#3d4266" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>';
+  const count = 16;
+  for (let i = 1; i < count; i++) {
+    const t = i / count;
+    const y = (1 - t) * (1 - t) * 6 + 2 * (1 - t) * t * 66 + t * t * 6; // 與 path 相同的二次貝茲曲線
+    const b = document.createElement('span');
+    b.className = 'bulb';
+    b.style.left = t * 100 + '%';
+    b.style.top = y + 'px';
+    b.style.setProperty('--c', colors[i % colors.length]);
+    b.style.setProperty('--d', (i * 0.37 % 2.6).toFixed(2) + 's');
+    wrap.append(b);
+  }
+}
+
+const sky = { ctx: $('sky').getContext('2d'), stars: [], shooting: null, nextShoot: 0 };
+const fx = { ctx: $('fx').getContext('2d'), parts: [] };
+let dpr = 1, vw = 0, vh = 0;
+
+function resize() {
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  vw = innerWidth; vh = innerHeight;
+  for (const c of [$('sky'), $('fx')]) {
+    c.width = vw * dpr; c.height = vh * dpr;
+    c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  const n = Math.min(220, Math.round((vw * vh) / 5500));
+  sky.stars = Array.from({ length: n }, () => ({
+    x: Math.random() * vw, y: Math.random() * vh * 0.9,
+    r: Math.random() * 1.3 + 0.3, p: Math.random() * Math.PI * 2, s: 0.6 + Math.random() * 1.6,
+  }));
+  if (REDUCED_MOTION) drawSky(0);
+}
+
+function drawSky(t) {
+  const { ctx } = sky;
+  ctx.clearRect(0, 0, vw, vh);
+  for (const st of sky.stars) {
+    const a = REDUCED_MOTION ? 0.8 : 0.45 + 0.55 * Math.abs(Math.sin(st.p + t * 0.001 * st.s));
+    ctx.globalAlpha = a;
+    ctx.fillStyle = '#fff8e8';
+    ctx.beginPath();
+    ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (REDUCED_MOTION) return;
+  if (!sky.shooting && t > sky.nextShoot) {
+    sky.shooting = { x: Math.random() * vw * 0.7 + vw * 0.2, y: Math.random() * vh * 0.3, life: 1 };
+    sky.nextShoot = t + 6000 + Math.random() * 8000;
+  }
+  const s = sky.shooting;
+  if (s) {
+    const grad = ctx.createLinearGradient(s.x, s.y, s.x + 90, s.y - 40);
+    grad.addColorStop(0, 'rgba(255,255,255,.9)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.globalAlpha = s.life;
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y);
+    ctx.lineTo(s.x + 90, s.y - 40);
+    ctx.stroke();
+    s.x -= 9; s.y += 4; s.life -= 0.022;
+    if (s.life <= 0) sky.shooting = null;
+  }
+  ctx.globalAlpha = 1;
+}
+
+function fireOrigin() {
+  const r = els.campfire.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height * 0.62 };
+}
+
+function spawnSparks(n, ambient = false) {
+  const o = fireOrigin();
+  if (o.y < -50 || o.y > vh + 50) return;
+  for (let i = 0; i < n && fx.parts.length < 450; i++) {
+    fx.parts.push(ambient
+      ? { x: o.x + (Math.random() - 0.5) * 50, y: o.y, vx: (Math.random() - 0.5) * 0.6, vy: -(0.6 + Math.random() * 1.2), g: -0.005, life: 1, decay: 0.008 + Math.random() * 0.01, r: 1 + Math.random() * 1.6, h: 20 + Math.random() * 25 }
+      : { x: o.x + (Math.random() - 0.5) * 30, y: o.y, vx: (Math.random() - 0.5) * 7, vy: -(3 + Math.random() * 6), g: 0.09, life: 1, decay: 0.015 + Math.random() * 0.02, r: 1.5 + Math.random() * 2.5, h: 15 + Math.random() * 40 });
+  }
+}
+
+function floatPlus(x, y) {
+  const el = document.createElement('span');
+  el.className = 'plus';
+  el.textContent = '+1';
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.style.setProperty('--dx', ((Math.random() - 0.5) * 60).toFixed(0) + 'px');
+  el.addEventListener('animationend', () => el.remove());
+  document.body.append(el);
+}
+
+function drawFx() {
+  const { ctx, parts } = fx;
+  ctx.clearRect(0, 0, vw, vh);
+  if (!parts.length) return;
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    p.x += p.vx; p.y += p.vy; p.vy += p.g; p.vx *= 0.985; p.life -= p.decay;
+    if (p.life <= 0) { parts.splice(i, 1); continue; }
+    ctx.fillStyle = `hsla(${p.h},100%,${55 + p.life * 20}%,${p.life})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * (0.5 + p.life * 0.5), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function frame(t) {
+  boost *= 0.92;
+  const scale = fireBase + boost;
+  els.flames.style.transform = `scale(${scale.toFixed(3)})`;
+  els.glow.style.transform = `scale(${(0.7 + scale * 0.5).toFixed(3)})`;
+  els.glow.style.opacity = Math.min(1, 0.45 + scale * 0.4).toFixed(2);
+
+  const p = phase();
+  if (!REDUCED_MOTION && (p === 'active' || p === 'waiting' || p === 'awaiting')) {
+    const ratio = state ? Math.min(1, displayTotal() / state.target_clicks) : 0;
+    if (Math.random() < 0.06 + ratio * 0.3) spawnSparks(1, true);
+  }
+  if (!REDUCED_MOTION) drawSky(t);
+  drawFx();
+  requestAnimationFrame(frame);
+}
+
+/* ============================================================
+ * 預覽模式工具列 / 主持人遙控
+ * ============================================================ */
+function makeToolbar(title, hint, buttons) {
+  const bar = document.createElement('div');
+  bar.className = 'toolbar';
+  const head = document.createElement('div');
+  head.className = 'tb-title';
+  head.textContent = title;
+  const h = document.createElement('span');
+  h.textContent = hint;
+  head.append(h);
+  const row = document.createElement('div');
+  row.className = 'tb-btns';
+  for (const [label, fn, cls] of buttons) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    if (cls) b.className = cls;
+    b.addEventListener('click', () => fn(b));
+    row.append(b);
+  }
+  bar.append(head, row);
+  document.body.append(bar);
+  document.body.classList.add('has-preview');
+}
+
+function initPreviewBar() {
+  const c = api.control;
+  const refresh = () => poll();
+  makeToolbar(`🧪 預覽模式 · ${PREVIEW === 'BOY' ? '男孩' : '女孩'}`, '不會連到 GAS', [
+    ['① 開啟集氣', () => { c.activate(); refresh(); toast('主持人已開啟集氣！'); }],
+    ['暫停', () => { c.deactivate(); refresh(); }],
+    ['+50 模擬親友', () => { c.add(50); refresh(); }],
+    ['直接灌滿 💥', () => { c.activate(); c.fill(); refresh(); }],
+    ['模擬人潮：開', (b) => { b.textContent = '模擬人潮：' + (c.toggleCrowd() ? '開' : '關'); }],
+    ['重來', () => { store.set('tsmc_voted_team', ''); store.set('tsmc_my_clicks', '0'); location.reload(); }, 'warn'],
+  ]);
+}
+
+function initHostBar() {
+  const send = async (op, okMsg) => {
+    try {
+      const r = await api.post({ action: 'host', host_key: HOST_KEY, op });
+      if (!r.ok) throw new Error(r.error);
+      applyState(r.state);
+      toast(okMsg);
+    } catch (err) {
+      toast(err.message === 'unauthorized' ? '主持人密碼錯誤' : '操作失敗，請再試一次');
+    }
+  };
+  const buttons = [
+    ['▶ 開啟集氣', () => send('activate', '集氣開始！')],
+    ['⏸ 暫停集氣', () => send('deactivate', '已暫停集氣')],
+    ['強制開獎', () => { if (confirm('確定要不等集氣，直接讓所有人揭曉嗎？')) send('force_reveal', '開獎！'); }, 'warn'],
+  ];
+  if (BACKEND === 'jsonbin') {
+    buttons.push(['彩排歸零', () => {
+      if (confirm('點擊數歸零、關閉集氣、清除性別（投票留言保留），確定嗎？')) send('reset', '已歸零，可以重新彩排');
+    }, 'warn']);
+  }
+  makeToolbar('🎤 主持人遙控', '只有你看得到這列', buttons);
+}
+
+/** 保密人公布性別（JSONbin 專用）：達標前請勿使用，寫入後任何人都讀得到。 */
+function initKeeperBar() {
+  const send = async (gender) => {
+    const label = gender === 'BOY' ? '男孩' : '女孩';
+    if (!confirm(`確定公布「${label}」？寫入後所有已達標的手機會立刻開獎。`)) return;
+    try {
+      const r = await api.post({ action: 'host', op: 'set_gender', gender });
+      if (!r.ok) throw new Error(r.error);
+      applyState(r.state);
+      toast('已寫入，開獎！');
+    } catch {
+      toast('寫入失敗，請再按一次');
+    }
+  };
+  makeToolbar('🤫 保密人專用', '等畫面顯示「已達標」再按', [
+    ['公布：男孩 💙', () => send('BOY')],
+    ['公布：女孩 💗', () => send('GIRL')],
+  ]);
+}
+
+/* ============================================================
+ * 啟動
+ * ============================================================ */
+addEventListener('resize', resize);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) flush();
+  else poll();
+});
+addEventListener('pagehide', flush);
+setInterval(() => state && renderWall(true), 60000); // 更新「幾分鐘前」
+
+initLights();
+resize();
+render();
+requestAnimationFrame(frame);
+
+if (!api) {
+  els.setupBanner.hidden = false;
+  els.conn.textContent = '尚未設定 API';
+} else {
+  if (PREVIEW) initPreviewBar();
+  else if (KEEPER && BACKEND === 'jsonbin') initKeeperBar();
+  else if (HOST_KEY) initHostBar();
+  if (PREVIEW) setConn(true);
+  pollLoop();
+  setInterval(flush, BATCH_INTERVAL_MS);
+}
+</script>
+</body>
+</html>
