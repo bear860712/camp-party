@@ -11,6 +11,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <style>
   :root {
     --night-0: #070b1d;
@@ -425,6 +428,38 @@
   }
   .toast.show { transform: translate(-50%, 0); }
 
+  /* ── 即時互動：在線人數、別人添柴、排行榜 ── */
+  .stage .online {
+    position: absolute; top: 10px; left: 50%; z-index: 2; transform: translateX(-50%);
+    padding: 3px 12px; border-radius: 999px; white-space: nowrap;
+    font-size: 12px; color: var(--cream);
+    background: rgba(0, 0, 0, .35); border: 1px solid rgba(255, 255, 255, .14);
+  }
+  .chip {
+    position: fixed; z-index: 31; pointer-events: none;
+    transform: translate(-50%, -50%);
+    max-width: 60vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 13px; font-weight: 700; color: var(--amber);
+    background: rgba(20, 24, 50, .85); border: 1px solid rgba(255, 193, 99, .5);
+    animation: chipUp 1.8s ease-out forwards;
+  }
+  @keyframes chipUp {
+    0% { opacity: 0; transform: translate(-50%, -20%) scale(.8); }
+    12% { opacity: 1; transform: translate(-50%, -60%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -420%); }
+  }
+  .leaders { margin-top: 14px; padding-top: 12px; border-top: 1px dashed rgba(255, 255, 255, .14); }
+  .leaders-title { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .leaders ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .leaders li { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .leaders .rk { width: 1.6em; text-align: center; color: var(--muted); }
+  .leaders .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .leaders .n { color: var(--amber); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .leaders li.me .nm { color: var(--amber); font-weight: 700; }
+  body.rush .meter-fill { box-shadow: 0 0 28px rgba(255, 90, 40, .95); }
+  body.rush .ignite.active { animation-duration: .6s; }
+
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
   /* ── 桌機：左營火、右投票與留言 ── */
@@ -481,7 +516,7 @@
     <p class="subtitle">圍著營火猜一猜：是漲停男寶，還是績優女寶？</p>
     <div class="conn" id="conn">連線營地中…</div>
     <div class="banner" id="setupBanner" hidden>
-      尚未設定後端：請在程式開頭填好 <code>GAS_WEB_APP_URL</code> 或 JSONbin 設定。<br>
+      無法連到 Firebase：請確認程式開頭的 <code>FIREBASE_CONFIG</code>，或檢查網路是否擋住 gstatic.com。<br>
       想先試玩？在網址後面加上 <code>?preview=boy</code> 或 <code>?preview=girl</code>。
     </div>
   </header>
@@ -497,6 +532,7 @@
           <use href="#pine" x="312" y="8" width="56" height="112"/>
           <use href="#pine" x="356" y="34" width="44" height="86"/>
         </svg>
+        <div class="online" id="online" hidden></div>
         <div class="glow" id="glow"></div>
         <div class="ground"></div>
         <svg class="tent boy"><use href="#tent"/></svg>
@@ -548,6 +584,11 @@
         </button>
 
         <div class="mine">我的貢獻 🔥 <strong id="mine">0</strong> 下</div>
+
+        <div class="leaders" id="leaders" hidden>
+          <div class="leaders-title">🪵 添柴排行榜</div>
+          <ol id="leaderList"></ol>
+        </div>
       </section>
     </div>
 
@@ -642,40 +683,43 @@
 
 <script>
 /* ============================================================
- * 後端設定：BACKEND 填 'jsonbin' 或 'gas'
+ * Firebase 設定（這段本來就會隨網頁公開，安全性靠 database.rules.json）
  * ============================================================ */
-const BACKEND = 'jsonbin';
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyAVvmQzN7AB4J7lSo86VcvjMyy8LizOYoQ',
+  authDomain: 'camp-party-7bf07.firebaseapp.com',
+  databaseURL: 'https://camp-party-7bf07-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId: 'camp-party-7bf07',
+  storageBucket: 'camp-party-7bf07.firebasestorage.app',
+  messagingSenderId: '378409193162',
+  appId: '1:378409193162:web:4ca53cf02907f72be8ae33',
+};
 
-// Google Apps Script（BACKEND = 'gas'）
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/PASTE_YOUR_DEPLOYMENT_ID/exec';
-
-// JSONbin（BACKEND = 'jsonbin'）
-// 金鑰會隨網頁公開，任何打開原始碼的人都能用它讀寫這個 bin（包含 gender 欄位）。
-// 建議到 JSONbin 後台建立只勾 Bins Read / Update 的 Access Key，並把 JSONBIN_KEY_HEADER 改成 'X-Access-Key'。
-const JSONBIN_BIN_ID = '6afc1ae8ffd5d16053c7eb32';
-const JSONBIN_KEY = '$2a$10$JyWJ5HkVjGLlbxKkJmiqu.NqaX/Cu.mVjl08MB3KjqhY9LbClV8OO';
-const JSONBIN_KEY_HEADER = 'X-Master-Key';
-
-const BATCH_INTERVAL_MS = 1500;   // 點擊批次送出間隔
-const POLL_INTERVAL_MS = 2000;    // 前景輪詢間隔
-const POLL_HIDDEN_MS = 8000;      // 分頁在背景時的輪詢間隔
-const POLL_AFTER_REVEAL_MS = 15000;
-const MAX_DELTA_PER_BATCH = 60;   // 需與 Code.gs 相同
-const REQUEST_TIMEOUT_MS = 10000;
+const BATCH_INTERVAL_MS = 400;     // 點擊批次送出間隔
+const MAX_DELTA_PER_BATCH = 60;    // 需與 database.rules.json 相同
+const DEFAULT_TARGET = 300;
+const REVEAL_LEAD_MS = 1500;       // 達標後停頓多久才開始 3、2、1
+const LATE_JOIN_MS = 20000;        // 開獎超過這麼久才打開網頁，就不再播倒數
+const MILESTONES = [
+  [0.25, '🪵 集氣 25%！營火燒起來了'],
+  [0.5, '🔥 過半了！火越來越旺'],
+  [0.75, '🚀 75%！再加把勁'],
+  [0.9, '⚡ 最後衝刺！全員狂點！'],
+];
 
 const params = new URLSearchParams(location.search);
 const PREVIEW = { boy: 'BOY', girl: 'GIRL' }[(params.get('preview') || '').toLowerCase()] || null;
 const HOST_KEY = params.get('host') || '';
-const KEEPER = params.has('keeper');
-const GAS_READY = /^https:\/\/script\.google\.com\/macros\/s\/(?!PASTE_)[\w-]+\/exec/.test(GAS_WEB_APP_URL);
-const JSONBIN_READY = /^[a-f0-9]{24}$/i.test(JSONBIN_BIN_ID) && JSONBIN_KEY.length > 10;
+const KEEPER_KEY = params.get('keeper') || '';
+const FIREBASE_READY = typeof firebase !== 'undefined' && /^https:\/\/.+/.test(FIREBASE_CONFIG.databaseURL);
 const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const $ = (id) => document.getElementById(id);
 const els = {
-  conn: $('conn'), setupBanner: $('setupBanner'),
+  conn: $('conn'), setupBanner: $('setupBanner'), online: $('online'),
   total: $('total'), target: $('target'), pct: $('pct'), meter: $('meter'), meterFill: $('meterFill'), meterNote: $('meterNote'),
   ignite: $('ignite'), igniteMain: $('igniteMain'), igniteSub: $('igniteSub'), mine: $('mine'),
+  leaders: $('leaders'), leaderList: $('leaderList'),
   campfire: $('campfire'), flames: $('flames'), glow: $('glow'),
   voteForm: $('voteForm'), nick: $('nick'), wish: $('wish'), wishCount: $('wishCount'), voteBtn: $('voteBtn'), votedBox: $('votedBox'),
   boyCount: $('boyCount'), girlCount: $('girlCount'), boyBar: $('boyBar'), girlBar: $('girlBar'), tallyBar: $('tallyBar'), tallyTotal: $('tallyTotal'),
@@ -697,8 +741,9 @@ const vibrate = (p) => { try { navigator.vibrate && navigator.vibrate(p); } catc
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
 const clampInt = (v, d, min, max) => { const n = parseInt(v, 10); return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : d; };
 const normGender = (v) => { const s = String(v ?? '').trim().toUpperCase(); return s === 'BOY' || s === 'GIRL' ? s : null; };
-const toBool = (v) => v === true || String(v ?? '').trim().toUpperCase() === 'TRUE';
 const cutText = (v, max) => Array.from(String(v ?? '').replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim()).slice(0, max).join('');
+const isDenied = (err) => /permission/i.test(String(err && (err.code || err.message)));
+const withTimeout = (p, ms) => Promise.race([p, sleep(ms).then(() => { throw new Error('timeout'); })]);
 
 function timeAgo(ts) {
   if (!ts) return '';
@@ -717,330 +762,294 @@ function toast(msg) {
   toastTimer = setTimeout(() => els.toast.classList.remove('show'), 2600);
 }
 
-const CLIENT_ID = store.get('tsmc_client_id') || (() => { const id = uid(); store.set('tsmc_client_id', id); return id; })();
-
 /* ============================================================
- * API 層：正式環境打 GAS；?preview= 時改用本機模擬後端
+ * 後端介面（Firebase 與預覽模擬共用）：
+ *   start({ onRaw, onConn, onClickDelta })  開始即時訂閱
+ *   addClicks(n) / vote(v) / setName(name) / tryReveal() / host(op, arg)
+ *   serverNow()  校正過的伺服器時間，讓所有人同一秒倒數
+ *
+ * 資料庫結構：
+ *   game     { active, force, target, total, round }
+ *   clicks   { <uid>: 累計點擊 }
+ *   votes    { <uid>: { nickname, team, wish, ts } }
+ *   presence { <uid>: { name, at } }        // 斷線自動移除
+ *   reveal   { gender, at }                 // 達標後才寫得進去
+ *   secret   { host_key, gender }           // 誰都讀不到
+ *   hostAuth { <uid>: 主持人密碼 }           // 規則拿來比對 secret/host_key
  * ============================================================ */
-function createGasApi(url) {
-  async function request(input, init) {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
-    try {
-      const res = await fetch(input, { ...init, signal: ctrl.signal, cache: 'no-store', redirect: 'follow' });
-      if (!res.ok) throw new Error('http_' + res.status);
-      return await res.json();
-    } finally {
-      clearTimeout(t);
-    }
+function createFirebaseApi() {
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const db = firebase.database();
+  const SV = firebase.database.ServerValue;
+  const raw = { game: null, reveal: null, votes: {}, clicks: {}, presence: {} };
+  let me = null;
+  let offset = 0;
+  let name = store.get('tsmc_nick', '');
+  let connected = false;
+  let h = null;
+  let authed = null;
+  let hostAuthed = null;
+  const emit = () => h && h.onRaw(raw);
+
+  function updatePresence() {
+    if (!me || !connected) return;
+    const ref = db.ref('presence/' + me);
+    ref.onDisconnect().remove();
+    ref.set({ name: cutText(name, 20), at: SV.TIMESTAMP }).catch(() => {});
   }
+
   return {
-    getState: () => request(`${url}?t=${Date.now()}`),
-    // text/plain 屬於 CORS simple request，不會觸發 GAS 無法處理的 OPTIONS 預檢
-    post: (body) => request(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(body),
-    }),
+    get me() { return me; },
+    serverNow: () => Date.now() + offset,
+
+    start(handlers) {
+      h = handlers;
+      const fail = (err) => { console.error(err); h.onConn(false); };
+      db.ref('.info/serverTimeOffset').on('value', (s) => { offset = Number(s.val()) || 0; });
+      db.ref('.info/connected').on('value', (s) => {
+        connected = s.val() === true;
+        h.onConn(connected);
+        updatePresence();
+      });
+      db.ref('game').on('value', (s) => { raw.game = s.val() || {}; emit(); }, fail);
+      db.ref('reveal').on('value', (s) => { raw.reveal = s.val(); emit(); }, fail);
+      db.ref('votes').on('value', (s) => { raw.votes = s.val() || {}; emit(); }, fail);
+      db.ref('presence').on('value', (s) => { raw.presence = s.val() || {}; emit(); }, fail);
+
+      // 逐筆監聽 clicks，才知道「誰剛剛加了幾下」
+      const clicks = db.ref('clicks');
+      let loaded = false;
+      const onChild = (s) => {
+        const old = raw.clicks[s.key] || 0;
+        const n = Math.max(0, Math.floor(Number(s.val()) || 0));
+        raw.clicks[s.key] = n;
+        if (loaded && n > old) h.onClickDelta(s.key, n - old);
+        emit();
+      };
+      clicks.on('child_added', onChild, fail);
+      clicks.on('child_changed', onChild, fail);
+      clicks.on('child_removed', (s) => { delete raw.clicks[s.key]; emit(); }, fail);
+      clicks.once('value', () => { loaded = true; }, fail);
+
+      authed = firebase.auth().signInAnonymously().then((cred) => {
+        me = cred.user.uid;
+        updatePresence();
+        emit();
+        return me;
+      });
+      authed.catch((err) => {
+        console.error(err);
+        toast('登入失敗：請確認 Firebase 已啟用「匿名」登入');
+      });
+      return authed;
+    },
+
+    async addClicks(n) {
+      await authed;
+      await db.ref().update({ 'game/total': SV.increment(n), ['clicks/' + me]: SV.increment(n) });
+    },
+
+    async vote(v) {
+      await authed;
+      await db.ref('votes/' + me).set({ ...v, ts: SV.TIMESTAMP });
+    },
+
+    setName(n) { name = n; updatePresence(); },
+
+    /** 猜性別寫入 reveal：規則只放行和 secret/gender 相同、且已達標的寫入。 */
+    async tryReveal() {
+      await authed;
+      const order = Math.random() < 0.5 ? ['BOY', 'GIRL'] : ['GIRL', 'BOY'];
+      for (const g of order) {
+        try {
+          // applyLocally = false：猜錯時本機畫面不會先閃出錯的答案
+          const r = await db.ref('reveal').transaction(
+            (cur) => (cur ? undefined : { gender: g, at: Date.now() + offset }), undefined, false);
+          return r.committed;
+        } catch { /* 猜錯（權限不足）就換另一個 */ }
+      }
+      return false;
+    },
+
+    async host(op, arg) {
+      await authed;
+      if (!hostAuthed) {
+        hostAuthed = db.ref('hostAuth/' + me).set(HOST_KEY || KEEPER_KEY);
+        hostAuthed.catch(() => { hostAuthed = null; });
+      }
+      await hostAuthed;
+      const r = db.ref();
+      switch (op) {
+        case 'activate': return r.child('game/active').set(true);
+        case 'deactivate': return r.child('game/active').set(false);
+        case 'force_reveal': return r.child('game/force').set(true);
+        case 'target': return r.child('game/target').set(arg);
+        case 'secret_gender': return r.child('secret/gender').set(arg);
+        case 'reset': return r.update({
+          'game/active': false, 'game/force': false, 'game/total': 0, 'game/round': uid().slice(0, 8),
+          clicks: null, reveal: null,
+        });
+        default: throw new Error('unknown_op');
+      }
+    },
   };
 }
 
+/** ?preview=boy|girl：不連 Firebase，在本機模擬一群親友 */
 function createMockApi(gender) {
-  const now = Date.now();
-  const s = {
-    isActive: false,
-    current: 0,
-    target: clampInt(params.get('target'), 100, 5, 100000),
-    force: false,
-    crowd: true,
-    votes: [
-      { name: '阿公', team: 'BOY', wish: '健康平安，像台積電一樣穩穩成長！', ts: now - 3600e3 * 5 },
-      { name: '阿嬤', team: 'GIRL', wish: '乖乖吃飯、好好睡覺，阿嬤包大紅包！', ts: now - 3600e3 * 3 },
-      { name: '大學室友阿哲', team: 'BOY', wish: '未來的護國神山就是你', ts: now - 60e3 * 50 },
-      { name: '愛買零股的阿姨', team: 'GIRL', wish: '長期持有，一路長紅 📈', ts: now - 60e3 * 12 },
-      { name: '同事小美', team: 'GIRL', wish: '歡迎加入地球！我們都好期待見到你～', ts: now - 60e3 * 3 },
-    ],
+  const me = 'me';
+  const t = Date.now();
+  const people = [
+    ['f1', '阿公', 'BOY', '健康平安，像台積電一樣穩穩成長！', 5 * 3600e3],
+    ['f2', '阿嬤', 'GIRL', '乖乖吃飯、好好睡覺，阿嬤包大紅包！', 3 * 3600e3],
+    ['f3', '大學室友阿哲', 'BOY', '未來的護國神山就是你', 50 * 60e3],
+    ['f4', '愛買零股的阿姨', 'GIRL', '長期持有，一路長紅 📈', 12 * 60e3],
+    ['f5', '同事小美', 'GIRL', '歡迎加入地球！我們都好期待見到你～', 3 * 60e3],
+    ['f6', '表弟', null, '', 0],
+  ];
+  const raw = {
+    game: { active: false, force: false, target: clampInt(params.get('target'), 100, 5, 100000), total: 0, round: 'preview' },
+    reveal: null, votes: {}, clicks: {}, presence: { [me]: { name: store.get('tsmc_nick', '') } },
   };
-  const revealed = () => s.current >= s.target || s.force;
-  const pub = () => {
-    const r = revealed();
-    return {
-      is_active: s.isActive,
-      current_clicks: s.current,
-      target_clicks: s.target,
-      revealed: r,
-      awaiting_gender: false,
-      gender: r ? gender : null,
-      votes: { boy: s.votes.filter((v) => v.team === 'BOY').length, girl: s.votes.filter((v) => v.team === 'GIRL').length },
-      wishes: s.votes.slice().reverse().slice(0, 60),
-      server_time: Date.now(),
-    };
-  };
-  const reply = async (obj) => { await sleep(120 + Math.random() * 260); return JSON.parse(JSON.stringify(obj)); };
-
-  // 模擬其他親友也在狂點
+  for (const [id, name, team, wish, ago] of people) {
+    raw.presence[id] = { name };
+    if (team) raw.votes[id] = { nickname: name, team, wish, ts: t - ago };
+  }
+  let h = null;
+  let crowd = true;
+  const emit = () => h && h.onRaw(raw);
+  function add(id, n) {
+    if (!raw.game.active || raw.reveal) return false;
+    raw.game.total += n;
+    raw.clicks[id] = (raw.clicks[id] || 0) + n;
+    if (id !== me && h) h.onClickDelta(id, n);
+    emit();
+    return true;
+  }
   setInterval(() => {
-    if (s.isActive && s.crowd && !revealed()) s.current += Math.floor(Math.random() * 4);
-  }, 1000);
+    if (!crowd) return;
+    for (const [id] of people) if (Math.random() < 0.4) add(id, 1 + Math.floor(Math.random() * 5));
+  }, 800);
 
   return {
-    getState: () => reply({ ok: true, state: pub() }),
-    post(body) {
-      if (body.action === 'click') {
-        if (!s.isActive) return reply({ ok: true, accepted: false, reason: 'inactive', state: pub() });
-        if (revealed()) return reply({ ok: true, accepted: false, reason: 'revealed', state: pub() });
-        s.current += Math.min(MAX_DELTA_PER_BATCH, body.delta | 0);
-        return reply({ ok: true, accepted: true, state: pub() });
-      }
-      if (body.action === 'vote') {
-        if (revealed()) return reply({ ok: false, error: 'voting_closed' });
-        s.votes.push({ name: body.nickname, team: body.team, wish: body.wish, ts: Date.now() });
-        return reply({ ok: true, state: pub() });
-      }
-      return reply({ ok: false, error: 'unknown_action' });
+    me,
+    serverNow: () => Date.now(),
+    start(handlers) { h = handlers; h.onConn(true); emit(); return Promise.resolve(me); },
+    async addClicks(n) { if (!add(me, n)) throw new Error('PERMISSION_DENIED'); },
+    async vote(v) {
+      await sleep(150);
+      if (raw.reveal) throw new Error('PERMISSION_DENIED');
+      raw.votes[me] = { ...v, ts: Date.now() };
+      emit();
     },
+    setName(name) { raw.presence[me] = { name }; emit(); },
+    async tryReveal() {
+      if (raw.reveal || !(raw.game.total >= raw.game.target || raw.game.force)) return false;
+      await sleep(150);
+      raw.reveal = { gender, at: Date.now() };
+      emit();
+      return true;
+    },
+    async host() { throw new Error('preview'); },
     control: {
-      activate() { s.isActive = true; },
-      deactivate() { s.isActive = false; },
-      add(n) { s.current += n; },
-      fill() { s.current = Math.max(s.current, s.target); },
-      toggleCrowd() { s.crowd = !s.crowd; return s.crowd; },
+      activate() { raw.game.active = true; emit(); },
+      deactivate() { raw.game.active = false; emit(); },
+      add(n) { add('f3', n); },
+      fill() { raw.game.active = true; emit(); add('f1', Math.max(1, raw.game.target - raw.game.total)); },
+      toggleCrowd() { crowd = !crowd; return crowd; },
     },
   };
 }
 
-/**
- * JSONbin 後端：沒有伺服器邏輯，每次寫入都是「讀最新 → 改自己的欄位 → PUT 整份」。
- *
- * bin 結構：
- * {
- *   "gender": "",            // 保密人在達標後才用 ?keeper 頁面寫入
- *   "is_active": false,
- *   "target_clicks": 200,
- *   "force_reveal": false,
- *   "base_clicks": 0,        // 選填：手動加的基礎點數
- *   "round": "",             // 彩排歸零時更換，讓所有裝置的點擊數重新起算
- *   "clicks": { "<裝置 ID>": 累計點擊數 },
- *   "votes":  { "<裝置 ID>": { nickname, team, wish, ts } }
- * }
- *
- * 每台裝置只寫自己那一格，且點擊數是累計值；兩台同時 PUT 互相覆蓋時，
- * 被蓋掉的一方在下次輪詢發現自己的值變少，會自動補寫回去，總數最終會收斂。
- */
-function createJsonbinApi() {
-  const base = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
-  const auth = { [JSONBIN_KEY_HEADER]: JSONBIN_KEY };
-  const me = CLIENT_ID;
-  const loadJson = (k) => { try { return JSON.parse(store.get(k) || 'null'); } catch { return null; } };
-
-  let myVote = loadJson('tsmc_jb_vote');
-  let myRound = store.get('tsmc_jb_round', '');
-  let myConfirmed = clampInt(store.get('tsmc_jb_clicks'), 0, 0, 1e9);
-  let lastBatchId = '';
-  let lastHeal = 0;
-  const saveMine = () => { store.set('tsmc_jb_round', myRound); store.set('tsmc_jb_clicks', String(myConfirmed)); };
-
-  async function request(url, init = {}) {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
-    try {
-      const res = await fetch(url, { ...init, signal: ctrl.signal, cache: 'no-store' });
-      if (!res.ok) throw new Error('http_' + res.status);
-      return await res.json();
-    } finally {
-      clearTimeout(t);
-    }
-  }
-  const unwrap = (r) => (r && r.record && typeof r.record === 'object' ? r.record : r);
-
-  function normalize(raw) {
-    const r = raw && typeof raw === 'object' ? raw : {};
-    const clicks = {};
-    if (r.clicks && typeof r.clicks === 'object') {
-      for (const [k, v] of Object.entries(r.clicks)) {
-        const n = Math.floor(Number(v));
-        if (n > 0) clicks[k] = Math.min(n, 1e7);
-      }
-    }
-    const votes = {};
-    // 相容舊版陣列格式 [{ nickname, team, blessing, time }]
-    const src = Array.isArray(r.votes)
-      ? r.votes.map((v, i) => ['legacy_' + i, v])
-      : Object.entries(r.votes && typeof r.votes === 'object' ? r.votes : {});
-    for (const [k, v] of src) {
-      if (!v || typeof v !== 'object') continue;
-      const team = normGender(v.team);
-      const nickname = cutText(v.nickname ?? v.name, 20);
-      if (!team || !nickname) continue;
-      votes[k] = { nickname, team, wish: cutText(v.wish ?? v.blessing, 80), ts: Number(v.ts) || Date.parse(v.time) || 0 };
-    }
-    return {
-      gender: normGender(r.gender),
-      is_active: toBool(r.is_active),
-      target_clicks: clampInt(r.target_clicks, 200, 1, 1e7),
-      force_reveal: toBool(r.force_reveal),
-      base_clicks: clampInt(r.base_clicks, 0, 0, 1e7),
-      round: String(r.round ?? ''),
-      clicks,
-      votes,
-    };
-  }
-
-  /** 對齊本機記錄：換 round 就歸零；bin 裡自己的值較大（例如清過瀏覽器資料）就採用。 */
-  function sync(rec) {
-    const theirs = rec.clicks[me] || 0;
-    if (rec.round !== myRound) { myRound = rec.round; myConfirmed = theirs; saveMine(); }
-    else if (theirs > myConfirmed) { myConfirmed = theirs; saveMine(); }
-    return rec;
-  }
-
-  function withMine(rec) {
-    const out = { ...rec, clicks: { ...rec.clicks }, votes: { ...rec.votes } };
-    if (myConfirmed > (out.clicks[me] || 0)) out.clicks[me] = myConfirmed;
-    if (myVote && !out.votes[me]) out.votes[me] = myVote;
-    return out;
-  }
-
-  const serialize = (rec) => ({
-    gender: rec.gender || '',
-    is_active: rec.is_active,
-    target_clicks: rec.target_clicks,
-    force_reveal: rec.force_reveal,
-    base_clicks: rec.base_clicks,
-    round: rec.round,
-    clicks: rec.clicks,
-    votes: rec.votes,
-  });
-
-  const totalOf = (rec) => rec.base_clicks + Object.values(rec.clicks).reduce((a, b) => a + b, 0);
-  const isReached = (rec) => totalOf(rec) >= rec.target_clicks || rec.force_reveal;
-  const needsHeal = (rec) => myConfirmed > (rec.clicks[me] || 0) || (myVote && !rec.votes[me]);
-
-  function publicState(rec) {
-    const reached = isReached(rec);
-    const list = Object.values(rec.votes);
-    return {
-      is_active: rec.is_active,
-      current_clicks: totalOf(rec),
-      target_clicks: rec.target_clicks,
-      revealed: reached && !!rec.gender,
-      awaiting_gender: reached && !rec.gender,
-      gender: reached ? rec.gender : null,
-      votes: { boy: list.filter((v) => v.team === 'BOY').length, girl: list.filter((v) => v.team === 'GIRL').length },
-      wishes: list.filter((v) => v.wish).sort((a, b) => b.ts - a.ts).slice(0, 60)
-        .map((v) => ({ name: v.nickname, team: v.team, wish: v.wish, ts: v.ts || null })),
-      server_time: Date.now(),
-    };
-  }
-
-  const read = async () => sync(normalize(unwrap(await request(`${base}/latest`, { headers: auth }))));
-  const write = async (rec) => normalize(unwrap(await request(base, {
-    method: 'PUT',
-    headers: { ...auth, 'Content-Type': 'application/json' },
-    body: JSON.stringify(serialize(withMine(rec))),
-  })));
-
-  return {
-    async getState() {
-      let rec = await read();
-      if (needsHeal(rec) && !isReached(rec) && Date.now() - lastHeal > 3000) {
-        lastHeal = Date.now();
-        try { rec = await write(rec); } catch { /* 下次輪詢再補寫 */ }
-      }
-      return { ok: true, state: publicState(rec) };
-    },
-
-    async post(body) {
-      const rec = await read();
-      switch (body.action) {
-        case 'click': {
-          if (!rec.is_active) return { ok: true, accepted: false, reason: 'inactive', state: publicState(rec) };
-          if (isReached(rec)) return { ok: true, accepted: false, reason: 'revealed', state: publicState(rec) };
-          // 同一批次重送時不重複累加
-          if (body.batch_id !== lastBatchId) {
-            myConfirmed += Math.min(MAX_DELTA_PER_BATCH, Math.max(0, body.delta | 0));
-            lastBatchId = body.batch_id;
-            saveMine();
-          }
-          return { ok: true, accepted: true, state: publicState(await write(rec)) };
-        }
-        case 'vote': {
-          if (isReached(rec)) return { ok: false, error: 'voting_closed' };
-          const nickname = cutText(body.nickname, 20);
-          const wish = cutText(body.wish, 80);
-          const team = normGender(body.team);
-          if (!nickname) return { ok: false, error: 'nickname_required' };
-          if (!team) return { ok: false, error: 'team_required' };
-          if (!wish) return { ok: false, error: 'wish_required' };
-          myVote = { nickname, team, wish, ts: Date.now() };
-          store.set('tsmc_jb_vote', JSON.stringify(myVote));
-          const out = { ...rec, votes: { ...rec.votes } };
-          delete out.votes[me];
-          return { ok: true, state: publicState(await write(out)) };
-        }
-        case 'host': {
-          const out = { ...rec };
-          if (body.op === 'activate') out.is_active = true;
-          else if (body.op === 'deactivate') out.is_active = false;
-          else if (body.op === 'force_reveal') out.force_reveal = true;
-          else if (body.op === 'set_gender') {
-            out.gender = normGender(body.gender);
-            if (!out.gender) return { ok: false, error: 'bad_gender' };
-          } else if (body.op === 'reset') {
-            Object.assign(out, { is_active: false, force_reveal: false, gender: null, base_clicks: 0, clicks: {}, round: uid().slice(0, 8) });
-            myRound = out.round;
-            myConfirmed = 0;
-            saveMine();
-          } else return { ok: false, error: 'unknown_op' };
-          return { ok: true, state: publicState(await write(out)) };
-        }
-        default:
-          return { ok: false, error: 'unknown_action' };
-      }
-    },
-  };
-}
-
-const api = PREVIEW ? createMockApi(PREVIEW)
-  : BACKEND === 'jsonbin' ? (JSONBIN_READY ? createJsonbinApi() : null)
-  : (GAS_READY ? createGasApi(GAS_WEB_APP_URL) : null);
+const api = PREVIEW ? createMockApi(PREVIEW) : FIREBASE_READY ? createFirebaseApi() : null;
 
 /* ============================================================
  * 狀態
  * ============================================================ */
-let state = null;           // 最近一次伺服器公開狀態
-let serverClicks = 0;       // 伺服器確認過的總點擊（單調遞增，避免畫面倒退）
-let pending = 0;            // 尚未打包送出的本機點擊
-let inflight = null;        // 正在送（或失敗待重送）的批次 { id, delta }
-let sending = false;
-let myClicks = clampInt(store.get('tsmc_my_clicks'), 0, 0, 1e9);
+let raw = null;             // 後端原始資料
+let state = null;           // 整理過、給畫面用的狀態
+let pending = 0;            // 尚未送出的本機點擊
+let justSent = 0;           // 剛送出、還沒反映到 state 的點擊（避免數字閃一下）
 let revealStarted = false;
+let revealTimers = [];
 let lastWallSig = '';
+let everConnected = false;
+let updateTimer = 0;
+let milestoneIdx = null;    // 已經播過第幾個里程碑；null = 剛打開頁面
 
-function displayTotal() {
-  return serverClicks + pending + (inflight ? inflight.delta : 0);
+function derive(r) {
+  const g = r.game || {};
+  const target = clampInt(g.target, DEFAULT_TARGET, 1, 1e7);
+  const total = Math.max(0, Math.floor(Number(g.total) || 0));
+  const gender = normGender(r.reveal && r.reveal.gender);
+  const me = api && api.me;
+
+  const votes = [];
+  for (const [id, v] of Object.entries(r.votes || {})) {
+    if (!v || typeof v !== 'object') continue;
+    const team = normGender(v.team);
+    const name = cutText(v.nickname, 20);
+    if (!team || !name) continue;
+    votes.push({ id, name, team, wish: cutText(v.wish, 80), ts: Number(v.ts) || 0 });
+  }
+  const names = {};
+  for (const [id, p] of Object.entries(r.presence || {})) {
+    const n = cutText(p && p.name, 20);
+    if (n) names[id] = n;
+  }
+  for (const v of votes) names[v.id] = v.name;
+
+  const leaders = Object.entries(r.clicks || {})
+    .filter(([, n]) => n > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([id, n]) => ({ id, n, name: names[id] || '神秘露營客', me: id === me }));
+
+  return {
+    is_active: g.active === true,
+    target_clicks: target,
+    current_clicks: total,
+    reached: total >= target || g.force === true,
+    reveal: gender ? { gender, at: Number(r.reveal.at) || 0 } : null,
+    votes: { boy: votes.filter((v) => v.team === 'BOY').length, girl: votes.filter((v) => v.team === 'GIRL').length },
+    wishes: votes.filter((v) => v.wish).sort((a, b) => b.ts - a.ts).slice(0, 60),
+    myVote: votes.find((v) => v.id === me) || null,
+    myConfirmed: (me && r.clicks && r.clicks[me]) || 0,
+    online: Object.keys(r.presence || {}).length,
+    leaders,
+    names,
+  };
 }
+
+const nameOf = (id) => (state && state.names[id]) || '神秘露營客';
+const displayTotal = () => (state ? state.current_clicks : 0) + pending + justSent;
+const myClicks = () => (state ? state.myConfirmed : 0) + pending + justSent;
 
 function phase() {
   if (!api) return 'unconfigured';
   if (!state) return 'loading';
-  if (state.revealed && state.gender) return 'revealed';
-  if (state.awaiting_gender) return 'awaiting';
+  if (state.reveal) return 'revealed';
+  if (state.reached) return 'awaiting';
   if (!state.is_active) return 'waiting';
   return 'active';
 }
 
-function applyState(s) {
-  if (!s || typeof s.current_clicks !== 'number') return;
-  state = s;
-  // 彩排後歸零（current_clicks = 0 且集氣關閉）時接受倒退；其餘取最大值，避免較舊的快取回應讓數字跳回去
-  serverClicks = (s.current_clicks === 0 && !s.is_active) ? 0 : Math.max(serverClicks, s.current_clicks);
-  if (myClicks > serverClicks + pending + (inflight ? inflight.delta : 0)) {
-    myClicks = pending + (inflight ? inflight.delta : 0);
-    store.set('tsmc_my_clicks', String(myClicks));
-  }
+/** 後端資料一變動就排程更新；50ms 內的多次變動合併成一次重繪 */
+function onRaw(r) {
+  raw = r;
+  if (!updateTimer) updateTimer = setTimeout(update, 50);
+}
+
+function update() {
+  updateTimer = 0;
+  if (!raw || !raw.game) return;
+  state = derive(raw);
+  justSent = 0;
+  checkMilestones();
+  if (state.reveal && !revealStarted) startReveal(state.reveal);
+  else if (!state.reveal && revealStarted) cancelReveal(); // 主持人彩排歸零
+  if (state.reached && !state.reveal) maybeTryReveal();
   render();
-  if (phase() === 'revealed' && !revealStarted) startReveal(s.gender);
 }
 
 /* ============================================================
@@ -1058,11 +1067,12 @@ function renderMeter() {
   els.pct.textContent = pct + '%';
   els.meterFill.style.width = pct + '%';
   els.meter.setAttribute('aria-valuenow', String(pct));
-  els.mine.textContent = fmt(myClicks);
+  els.mine.textContent = fmt(myClicks());
   fireBase = 0.55 + 0.7 * ratio;
 
   const p = phase();
-  let note = ' ';
+  document.body.classList.toggle('rush', p === 'active' && ratio >= 0.9);
+  let note = ' ';
   if (p === 'waiting') note = '集氣尚未開始，先去投票、留下祝福吧！';
   else if (p === 'active') note = pct >= 90 ? '🚀 快漲停了！大家再加把勁！' : pct >= 50 ? '🔥 營火越燒越旺，繼續狂點！' : '每一下都在幫營火加柴 🪵';
   else if (p === 'awaiting') note = '🎯 已達標！等保密人揭曉中…';
@@ -1087,9 +1097,36 @@ function renderButton() {
   else set('🎉 已揭曉！', '點這張卡片可再看一次揭曉', false);
 }
 
+function renderOnline() {
+  const n = state ? state.online : 0;
+  els.online.hidden = !n;
+  els.online.textContent = `🏕️ ${fmt(n)} 人圍著營火`;
+}
+
+function renderLeaders() {
+  const list = state.leaders;
+  els.leaders.hidden = !list.length;
+  const medals = ['🥇', '🥈', '🥉', '4', '5'];
+  els.leaderList.replaceChildren(...list.map((l, i) => {
+    const li = document.createElement('li');
+    if (l.me) li.className = 'me';
+    const rk = document.createElement('span');
+    rk.className = 'rk';
+    rk.textContent = medals[i];
+    const nm = document.createElement('span');
+    nm.className = 'nm';
+    nm.textContent = l.me ? `${l.name}（我）` : l.name;
+    const n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = fmt(l.n);
+    li.append(rk, nm, n);
+    return li;
+  }));
+}
+
 function renderTally() {
-  const boy = state.votes?.boy || 0;
-  const girl = state.votes?.girl || 0;
+  const boy = state.votes.boy;
+  const girl = state.votes.girl;
   const total = boy + girl;
   const bp = total ? Math.round((boy / total) * 100) : 50;
   const gp = 100 - bp;
@@ -1104,10 +1141,11 @@ function renderTally() {
 }
 
 function renderWall(force = false) {
-  const wishes = state.wishes || [];
-  const sig = wishes.length + '|' + (wishes[0] ? wishes[0].ts + wishes[0].name : '');
+  const wishes = state.wishes;
+  const sig = wishes.map((w) => w.id + w.ts).join('|');
   if (!force && sig === lastWallSig) return;
   const isFirst = lastWallSig === '';
+  const newestChanged = !isFirst && wishes[0] && !lastWallSig.startsWith(wishes[0].id + wishes[0].ts);
   lastWallSig = sig;
 
   els.wallCount.textContent = wishes.length ? `最新 ${wishes.length} 則` : '';
@@ -1122,7 +1160,7 @@ function renderWall(force = false) {
   wishes.forEach((w, i) => {
     const card = document.createElement('article');
     card.className = 'wish ' + (w.team || '');
-    if (isFirst || force || i > 0) card.style.animation = 'none';
+    if (!(newestChanged && i === 0) || force) card.style.animation = 'none';
 
     const head = document.createElement('div');
     head.className = 'wish-head';
@@ -1149,7 +1187,8 @@ function renderWall(force = false) {
 }
 
 function renderVoteArea() {
-  const voted = store.get('tsmc_voted_team');
+  // 伺服器上有自己的票就以伺服器為準；還沒登入完成前先看本機記錄
+  const voted = state.myVote ? state.myVote.team : (api && api.me ? '' : store.get('tsmc_voted_team'));
   const closed = phase() === 'revealed' || phase() === 'awaiting';
   if (!voted && !closed) {
     els.voteForm.hidden = false;
@@ -1175,7 +1214,9 @@ function renderVoteArea() {
 function render() {
   renderMeter();
   renderButton();
+  renderOnline();
   if (state) {
+    renderLeaders();
     renderTally();
     renderWall();
     renderVoteArea();
@@ -1183,15 +1224,29 @@ function render() {
 }
 
 /* ============================================================
- * 點擊集氣：本機即時回饋 + 每 1.5 秒批次送出
+ * 里程碑：用伺服器總數判斷，所有人幾乎同時一起慶祝
+ * ============================================================ */
+function checkMilestones() {
+  const ratio = state.current_clicks / state.target_clicks;
+  let idx = -1;
+  MILESTONES.forEach(([r], i) => { if (ratio >= r) idx = i; });
+  const prev = milestoneIdx;
+  milestoneIdx = idx;
+  if (prev === null || idx <= prev || phase() !== 'active') return;
+  toast(MILESTONES[idx][1]);
+  spawnSparks(60);
+  boost = 0.6;
+  vibrate([60, 40, 60]);
+}
+
+/* ============================================================
+ * 點擊集氣：本機即時回饋 + 每 0.4 秒批次送出
  * ============================================================ */
 let boost = 0;
 
 function registerClick(x, y) {
   if (phase() !== 'active') return;
   pending++;
-  myClicks++;
-  store.set('tsmc_my_clicks', String(myClicks));
   boost = Math.min(boost + 0.08, 0.6);
   vibrate(20);
   spawnSparks(12);
@@ -1217,66 +1272,54 @@ els.ignite.addEventListener('click', (e) => {
 });
 els.ignite.addEventListener('contextmenu', (e) => e.preventDefault());
 
-async function flush() {
-  if (!api || sending) return;
-  if (!inflight) {
-    if (pending <= 0) return;
-    const delta = Math.min(pending, MAX_DELTA_PER_BATCH);
-    inflight = { id: uid(), delta };
-    pending -= delta;
-  }
-  sending = true;
-  try {
-    const r = await api.post({ action: 'click', delta: inflight.delta, batch_id: inflight.id });
-    if (r.ok && r.accepted) {
-      inflight = null;
-      setConn(true);
-    } else if (r.ok && !r.accepted) {
-      // 集氣已關閉或已開獎：本機尚未採計的點擊作廢
-      myClicks = Math.max(0, myClicks - inflight.delta - pending);
-      store.set('tsmc_my_clicks', String(myClicks));
-      inflight = null;
-      pending = 0;
-    }
-    // 其他（busy 等）保留 inflight，下一輪用相同 batch_id 重送，後端會去重
-    if (r.state) applyState(r.state);
-  } catch {
-    setConn(false);
-  } finally {
-    sending = false;
-    renderMeter();
-  }
+function flush() {
+  if (!api || pending <= 0) return;
+  if (phase() !== 'active') { pending = 0; renderMeter(); return; }
+  const n = Math.min(pending, MAX_DELTA_PER_BATCH);
+  pending -= n;
+  justSent += n;
+  // 被規則拒絕（例如剛好暫停）時，Firebase 會自動把本機數字還原
+  api.addClicks(n).catch((err) => console.warn('click rejected', err));
 }
 
 /* ============================================================
- * 輪詢
+ * 其他人添柴：每秒彙整一次，在營火上飄出「暱稱 +N」
  * ============================================================ */
-let polling = false;
+const clickAgg = new Map();
 
-async function poll() {
-  if (!api || polling) return;
-  polling = true;
-  try {
-    const r = await api.getState();
-    if (r.ok) { applyState(r.state); setConn(true); }
-    else setConn(false);
-  } catch {
-    setConn(false);
-  } finally {
-    polling = false;
-  }
+function onClickDelta(id, d) {
+  if (api && id === api.me) return;
+  clickAgg.set(id, (clickAgg.get(id) || 0) + d);
+  if (!REDUCED_MOTION && !document.hidden) spawnSparks(Math.min(8, 2 + d));
+  boost = Math.min(Math.max(boost, 0.35), boost + 0.01 * d);
 }
 
-async function pollLoop() {
-  await poll();
-  const base = phase() === 'revealed' ? POLL_AFTER_REVEAL_MS : document.hidden ? POLL_HIDDEN_MS : POLL_INTERVAL_MS;
-  setTimeout(pollLoop, base + Math.random() * 300);
+setInterval(() => {
+  if (!clickAgg.size) return;
+  const top = [...clickAgg].sort((a, b) => b[1] - a[1]).slice(0, 3);
+  clickAgg.clear();
+  if (REDUCED_MOTION || document.hidden) return;
+  top.forEach(([id, n], i) => setTimeout(() => showChip(`${nameOf(id)} +${n}`), i * 280));
+}, 1000);
+
+function showChip(text) {
+  const o = fireOrigin();
+  if (o.y < 0 || o.y > vh) return;
+  const el = document.createElement('span');
+  el.className = 'chip';
+  el.textContent = text;
+  el.style.left = Math.min(vw - 70, Math.max(70, o.x + (Math.random() - 0.5) * 180)) + 'px';
+  el.style.top = (o.y - 20 - Math.random() * 30) + 'px';
+  el.addEventListener('animationend', () => el.remove());
+  document.body.append(el);
 }
 
 function setConn(ok) {
+  if (ok) everConnected = true;
+  else if (!everConnected) return; // 剛打開頁面還在連線，不要先嚇人
   els.conn.classList.toggle('ok', ok);
   els.conn.classList.toggle('bad', !ok);
-  els.conn.textContent = PREVIEW ? `預覽模式（模擬${PREVIEW === 'BOY' ? '男孩' : '女孩'}）` : ok ? '營地連線中' : '連線不穩，重新連線中…';
+  els.conn.textContent = PREVIEW ? `預覽模式（模擬${PREVIEW === 'BOY' ? '男孩' : '女孩'}）` : ok ? '營地即時連線中' : '連線中斷，重新連線中…';
 }
 
 /* ============================================================
@@ -1290,15 +1333,14 @@ const ERRORS = {
   team_required: '請選擇一頂帳篷',
   wish_required: '請寫一句給寶寶的祝福',
   voting_closed: '已開獎，投票截止囉！',
-  busy: '營地有點擠，請再按一次',
 };
 
 els.voteForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!api) { toast('尚未設定後端'); return; }
-  const nickname = els.nick.value.trim();
+  const nickname = cutText(els.nick.value, 20);
   const team = (els.voteForm.querySelector('input[name="team"]:checked') || {}).value;
-  const wish = els.wish.value.trim();
+  const wish = cutText(els.wish.value, 80);
   if (!nickname) { toast(ERRORS.nickname_required); els.nick.focus(); return; }
   if (!team) { toast(ERRORS.team_required); return; }
   if (!wish) { toast(ERRORS.wish_required); els.wish.focus(); return; }
@@ -1306,42 +1348,71 @@ els.voteForm.addEventListener('submit', async (e) => {
   els.voteBtn.disabled = true;
   els.voteBtn.textContent = '送出中…';
   try {
-    const r = await api.post({ action: 'vote', nickname, team, wish, client_id: CLIENT_ID });
-    if (!r.ok) throw new Error(r.error || 'unknown');
+    await withTimeout(api.vote({ nickname, team, wish }), 10000);
     store.set('tsmc_nick', nickname);
     store.set('tsmc_voted_team', team);
-    applyState(r.state);
-    renderVoteArea();
+    api.setName(nickname);
     toast(team === 'BOY' ? '💙 歡迎加入藍色帳篷！' : '💗 歡迎加入粉色帳篷！');
     spawnSparks(30);
   } catch (err) {
-    toast(ERRORS[err.message] || '送出失敗，請稍後再試');
+    toast(isDenied(err) ? ERRORS.voting_closed : err.message === 'timeout' ? '網路不穩，連上後會自動送出' : '送出失敗，請稍後再試');
   } finally {
     els.voteBtn.disabled = false;
     els.voteBtn.textContent = '把祝福丟進營火 🔥';
+    if (state) renderVoteArea();
   }
 });
 
 /* ============================================================
- * 開獎：3 秒倒數 → 煙火 → 揭曉卡片
+ * 開獎：達標 → 依伺服器時間同步 3、2、1 → 煙火 → 揭曉卡片
  * ============================================================ */
-async function startReveal(gender) {
+let lastRevealTry = 0;
+
+function maybeTryReveal() {
+  if (!api || Date.now() - lastRevealTry < 4000) return;
+  lastRevealTry = Date.now();
+  // 稍微錯開，避免所有手機同一毫秒搶著寫
+  setTimeout(() => api.tryReveal().catch(() => {}), Math.random() * 600);
+}
+
+const later = (ms, fn) => revealTimers.push(setTimeout(fn, Math.max(0, ms)));
+
+function startReveal(rv) {
   revealStarted = true;
   pending = 0;
-  renderButton();
+  const t0 = rv.at + REVEAL_LEAD_MS;   // 「3」出現的伺服器時間
+  const cardAt = t0 + 3000;
+  const now = api.serverNow();
+  const finish = (late) => {
+    els.countdown.classList.remove('show');
+    showRevealCard(rv.gender);
+    fireworks(rv.gender, late ? 3000 : 7000);
+    if (!late) vibrate([120, 60, 120, 60, 400]);
+  };
+  if (now >= cardAt) { finish(now >= cardAt + LATE_JOIN_MS); return; }
+
+  els.cdNum.textContent = '';
   els.countdown.classList.add('show');
-  for (const n of [3, 2, 1]) {
-    els.cdNum.textContent = n;
-    els.cdNum.classList.remove('go');
-    void els.cdNum.offsetWidth;
-    els.cdNum.classList.add('go');
-    vibrate(80);
-    await sleep(1000);
-  }
+  [3, 2, 1].forEach((n, i) => {
+    const at = t0 + i * 1000;
+    if (at + 1000 <= now) return;
+    later(at - now, () => {
+      els.cdNum.textContent = n;
+      els.cdNum.classList.remove('go');
+      void els.cdNum.offsetWidth;
+      els.cdNum.classList.add('go');
+      vibrate(80);
+    });
+  });
+  later(cardAt - now, () => finish(false));
+}
+
+function cancelReveal() {
+  revealTimers.forEach(clearTimeout);
+  revealTimers = [];
+  revealStarted = false;
   els.countdown.classList.remove('show');
-  showRevealCard(gender);
-  fireworks(gender);
-  vibrate([120, 60, 120, 60, 400]);
+  els.reveal.classList.remove('show');
 }
 
 function showRevealCard(gender) {
@@ -1352,8 +1423,8 @@ function showRevealCard(gender) {
   els.rcGender.textContent = boy ? '男孩' : '女孩';
   els.rcPun.textContent = boy ? '漲停男寶 正式上市 📈' : '績優女寶 正式上市 💎';
   els.rcTotal.textContent = fmt(state.current_clicks);
-  els.rcRight.textContent = fmt(boy ? state.votes?.boy : state.votes?.girl);
-  els.rcMine.textContent = fmt(myClicks);
+  els.rcRight.textContent = fmt(boy ? state.votes.boy : state.votes.girl);
+  els.rcMine.textContent = fmt(state.myConfirmed);
   els.rcDate.textContent = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' }) + ' · 全體親友一起揭曉';
   els.reveal.classList.add('show');
   els.rcAgain.focus();
@@ -1377,9 +1448,9 @@ function fireworks(gender, duration = 7000) {
 }
 
 els.rcClose.addEventListener('click', () => els.reveal.classList.remove('show'));
-els.rcAgain.addEventListener('click', () => state?.gender && fireworks(state.gender, 4000));
+els.rcAgain.addEventListener('click', () => state?.reveal && fireworks(state.reveal.gender, 4000));
 els.ignite.parentElement.addEventListener('click', () => {
-  if (phase() === 'revealed' && revealStarted && !els.countdown.classList.contains('show')) showRevealCard(state.gender);
+  if (phase() === 'revealed' && revealStarted && !els.countdown.classList.contains('show')) showRevealCard(state.reveal.gender);
 });
 
 /* ============================================================
@@ -1518,7 +1589,7 @@ function frame(t) {
 }
 
 /* ============================================================
- * 預覽模式工具列 / 主持人遙控
+ * 預覽模式工具列 / 主持人遙控 / 保密人
  * ============================================================ */
 function makeToolbar(title, hint, buttons) {
   const bar = document.createElement('div');
@@ -1546,58 +1617,51 @@ function makeToolbar(title, hint, buttons) {
 
 function initPreviewBar() {
   const c = api.control;
-  const refresh = () => poll();
-  makeToolbar(`🧪 預覽模式 · ${PREVIEW === 'BOY' ? '男孩' : '女孩'}`, '不會連到 GAS', [
-    ['① 開啟集氣', () => { c.activate(); refresh(); toast('主持人已開啟集氣！'); }],
-    ['暫停', () => { c.deactivate(); refresh(); }],
-    ['+50 模擬親友', () => { c.add(50); refresh(); }],
-    ['直接灌滿 💥', () => { c.activate(); c.fill(); refresh(); }],
+  makeToolbar(`🧪 預覽模式 · ${PREVIEW === 'BOY' ? '男孩' : '女孩'}`, '不會連到 Firebase', [
+    ['① 開啟集氣', () => { c.activate(); toast('主持人已開啟集氣！'); }],
+    ['暫停', () => c.deactivate()],
+    ['+50 模擬親友', () => c.add(50)],
+    ['直接灌滿 💥', () => c.fill()],
     ['模擬人潮：開', (b) => { b.textContent = '模擬人潮：' + (c.toggleCrowd() ? '開' : '關'); }],
-    ['重來', () => { store.set('tsmc_voted_team', ''); store.set('tsmc_my_clicks', '0'); location.reload(); }, 'warn'],
+    ['重來', () => { store.set('tsmc_voted_team', ''); location.reload(); }, 'warn'],
   ]);
 }
 
+const hostError = (err) => toast(isDenied(err) ? '密碼錯誤，或資料庫還沒設定 secret/host_key' : '操作失敗，請再試一次');
+
 function initHostBar() {
-  const send = async (op, okMsg) => {
-    try {
-      const r = await api.post({ action: 'host', host_key: HOST_KEY, op });
-      if (!r.ok) throw new Error(r.error);
-      applyState(r.state);
-      toast(okMsg);
-    } catch (err) {
-      toast(err.message === 'unauthorized' ? '主持人密碼錯誤' : '操作失敗，請再試一次');
-    }
+  const send = async (op, arg, okMsg) => {
+    try { await api.host(op, arg); toast(okMsg); } catch (err) { hostError(err); }
   };
-  const buttons = [
-    ['▶ 開啟集氣', () => send('activate', '集氣開始！')],
-    ['⏸ 暫停集氣', () => send('deactivate', '已暫停集氣')],
-    ['強制開獎', () => { if (confirm('確定要不等集氣，直接讓所有人揭曉嗎？')) send('force_reveal', '開獎！'); }, 'warn'],
-  ];
-  if (BACKEND === 'jsonbin') {
-    buttons.push(['彩排歸零', () => {
-      if (confirm('點擊數歸零、關閉集氣、清除性別（投票留言保留），確定嗎？')) send('reset', '已歸零，可以重新彩排');
-    }, 'warn']);
-  }
-  makeToolbar('🎤 主持人遙控', '只有你看得到這列', buttons);
+  makeToolbar('🎤 主持人遙控', '只有你看得到這列', [
+    ['▶ 開啟集氣', () => send('activate', null, '集氣開始！')],
+    ['⏸ 暫停', () => send('deactivate', null, '已暫停集氣')],
+    ['🎯 目標', () => {
+      const n = parseInt(prompt('集氣目標要幾下？', state ? state.target_clicks : DEFAULT_TARGET), 10);
+      if (n > 0) send('target', n, `目標設為 ${fmt(n)} 下`);
+    }],
+    ['強制開獎', () => { if (confirm('確定不等集氣，直接讓所有人揭曉嗎？')) send('force_reveal', null, '開獎！'); }, 'warn'],
+    ['彩排歸零', () => {
+      if (confirm('點擊數歸零、關閉集氣、清除開獎結果（投票留言和保密性別都保留），確定嗎？')) send('reset', null, '已歸零，可以重新彩排');
+    }, 'warn'],
+  ]);
 }
 
-/** 保密人公布性別（JSONbin 專用）：達標前請勿使用，寫入後任何人都讀得到。 */
+/** 保密人事先設定性別：寫入後誰都讀不到，達標的瞬間由規則放行，所有人同步揭曉。 */
 function initKeeperBar() {
   const send = async (gender) => {
     const label = gender === 'BOY' ? '男孩' : '女孩';
-    if (!confirm(`確定公布「${label}」？寫入後所有已達標的手機會立刻開獎。`)) return;
+    if (!confirm(`確定把性別設為「${label}」？\n設定後不會公開，集氣達標的瞬間所有人一起揭曉。`)) return;
     try {
-      const r = await api.post({ action: 'host', op: 'set_gender', gender });
-      if (!r.ok) throw new Error(r.error);
-      applyState(r.state);
-      toast('已寫入，開獎！');
-    } catch {
-      toast('寫入失敗，請再按一次');
-    }
+      await api.host('secret_gender', gender);
+      toast('🤫 已保密設定，達標時自動揭曉');
+      lastRevealTry = 0;
+      if (state && state.reached) maybeTryReveal();
+    } catch (err) { hostError(err); }
   };
-  makeToolbar('🤫 保密人專用', '等畫面顯示「已達標」再按', [
-    ['公布：男孩 💙', () => send('BOY')],
-    ['公布：女孩 💗', () => send('GIRL')],
+  makeToolbar('🤫 保密人專用', '設定後誰都讀不到', [
+    ['設為男孩 💙', () => send('BOY')],
+    ['設為女孩 💗', () => send('GIRL')],
   ]);
 }
 
@@ -1605,12 +1669,11 @@ function initKeeperBar() {
  * 啟動
  * ============================================================ */
 addEventListener('resize', resize);
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) flush();
-  else poll();
-});
+document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
 addEventListener('pagehide', flush);
 setInterval(() => state && renderWall(true), 60000); // 更新「幾分鐘前」
+// 達標但還沒揭曉時（例如保密人晚一點才設定），定期再試
+setInterval(() => { if (state && state.reached && !state.reveal) maybeTryReveal(); }, 4000);
 
 initLights();
 resize();
@@ -1619,13 +1682,12 @@ requestAnimationFrame(frame);
 
 if (!api) {
   els.setupBanner.hidden = false;
-  els.conn.textContent = '尚未設定 API';
+  els.conn.textContent = '尚未設定後端';
 } else {
   if (PREVIEW) initPreviewBar();
-  else if (KEEPER && BACKEND === 'jsonbin') initKeeperBar();
+  else if (KEEPER_KEY) initKeeperBar();
   else if (HOST_KEY) initHostBar();
-  if (PREVIEW) setConn(true);
-  pollLoop();
+  api.start({ onRaw, onConn: setConn, onClickDelta }).catch(() => {});
   setInterval(flush, BATCH_INTERVAL_MS);
 }
 </script>
