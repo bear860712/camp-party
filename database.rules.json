@@ -69,11 +69,33 @@
       "$other": { ".validate": false }
     },
 
+    "clues": {
+      ".read": true,
+      ".write": "auth != null && root.child('secret/host_key').exists() && root.child('hostAuth').child(auth.uid).val() === root.child('secret/host_key').val()",
+      "$key": {
+        ".validate": "$key.length <= 16 && newData.hasChildren(['side', 'at'])",
+        "side": { ".validate": "newData.val() === 'BOY' || newData.val() === 'GIRL'" },
+        "note": { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "at": { ".validate": "newData.val() === now" },
+        "$other": { ".validate": false }
+      }
+    },
+
     "secret": {
       ".read": false,
       "gender": {
         ".write": "auth != null && root.child('secret/host_key').exists() && root.child('hostAuth').child(auth.uid).val() === root.child('secret/host_key').val()",
         ".validate": "newData.val() === 'BOY' || newData.val() === 'GIRL'"
+      },
+      "clues": {
+        ".read": "auth != null && root.child('secret/host_key').exists() && root.child('hostAuth').child(auth.uid).val() === root.child('secret/host_key').val()",
+        ".write": "auth != null && root.child('secret/host_key').exists() && root.child('hostAuth').child(auth.uid).val() === root.child('secret/host_key').val()",
+        "$key": {
+          ".validate": "$key.length <= 16 && newData.hasChildren(['side'])",
+          "side": { ".validate": "newData.val() === 'BOY' || newData.val() === 'GIRL'" },
+          "note": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "$other": { ".validate": false }
+        }
       }
     },
 

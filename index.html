@@ -460,6 +460,69 @@
   body.rush .meter-fill { box-shadow: 0 0 28px rgba(255, 90, 40, .95); }
   body.rush .ignite.active { animation-duration: .6s; }
 
+  /* ── 孕期線索 ── */
+  .clue-head, .clue-row { display: grid; grid-template-columns: 1fr 46px 1fr; gap: 6px; align-items: stretch; }
+  .clue-head { font-family: var(--font-display); font-size: 15px; margin-bottom: 8px; text-align: center; }
+  .clue-head .b { color: var(--boy); }
+  .clue-head .g { color: var(--girl); }
+  .clues { display: grid; gap: 6px; }
+  .clue-row { border-radius: 14px; }
+  .clue-row .side {
+    position: relative; display: flex; align-items: center; justify-content: center; text-align: center;
+    min-height: 44px; padding: 6px 8px; border-radius: 12px;
+    font-size: 14px; line-height: 1.35;
+    background: rgba(255, 255, 255, .04); border: 1px solid rgba(255, 255, 255, .08);
+    color: var(--muted);
+    transition: background .4s, border-color .4s, box-shadow .4s, color .4s, opacity .4s;
+  }
+  .clue-row .mid {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    font-size: 11px; color: var(--muted); text-align: center; line-height: 1.2;
+  }
+  .clue-row .mid b { font-family: var(--font-display); font-size: 18px; color: var(--amber); line-height: 1; }
+  .clue-row.on .side { opacity: .4; }
+  .clue-row.on .side.hit { opacity: 1; color: var(--cream); font-weight: 700; }
+  .clue-row.on.BOY .side.hit { border-color: var(--boy); background: rgba(95, 176, 255, .16); box-shadow: 0 0 18px rgba(95, 176, 255, .35); }
+  .clue-row.on.GIRL .side.hit { border-color: var(--girl); background: rgba(255, 143, 196, .16); box-shadow: 0 0 18px rgba(255, 143, 196, .35); }
+  .clue-row.on .side.hit::after {
+    content: "✓"; position: absolute; top: -7px; right: -5px;
+    width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+    font-size: 12px; font-weight: 900; color: #0b1026; background: var(--amber);
+  }
+  .clue-row.on.BOY .mid b { color: var(--boy); }
+  .clue-row.on.GIRL .mid b { color: var(--girl); }
+  .clue-row.flash { animation: clueFlash 1.6s ease-out; }
+  @keyframes clueFlash { 0%, 40% { box-shadow: 0 0 0 3px var(--amber), 0 0 30px rgba(255, 193, 99, .6); } 100% { box-shadow: 0 0 0 0 transparent; } }
+  .clue-note {
+    grid-column: 1 / -1; margin: -2px 0 2px; text-align: center;
+    font-size: 13px; color: var(--amber);
+  }
+  .clue-foot { margin-top: 12px; text-align: center; font-size: 14px; color: var(--muted); }
+  .clue-foot .b { color: var(--boy); font-weight: 700; }
+  .clue-foot .g { color: var(--girl); font-weight: 700; }
+
+  /* 主持人：線索答案設定 */
+  #clueAdmin { z-index: 80; overflow-y: auto; align-items: start; }
+  .ca-card {
+    width: min(100%, 520px); margin: 12px auto; padding: 18px;
+    border-radius: 20px; background: #161a36; border: 1px solid rgba(255, 193, 99, .35);
+  }
+  .ca-card h3 { margin: 0 0 4px; font-family: var(--font-display); font-size: 19px; color: var(--amber); }
+  .ca-card > p { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+  .ca-row { padding: 10px 0; border-top: 1px dashed rgba(255, 255, 255, .12); }
+  .ca-row .ca-label { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .ca-row .ca-label em { font-style: normal; color: var(--amber); margin-left: 6px; }
+  .ca-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .ca-opts button {
+    min-height: 40px; padding: 6px 8px; border-radius: 10px; font-size: 13px;
+    background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .16); color: var(--muted);
+  }
+  .ca-opts button.sel.BOY { border-color: var(--boy); background: rgba(95, 176, 255, .2); color: var(--cream); font-weight: 700; }
+  .ca-opts button.sel.GIRL { border-color: var(--girl); background: rgba(255, 143, 196, .2); color: var(--cream); font-weight: 700; }
+  .ca-row .input { margin-top: 6px; padding: 8px 12px; font-size: 14px; border-radius: 10px; }
+  .ca-actions { display: flex; gap: 8px; margin-top: 14px; position: sticky; bottom: 0; padding-top: 10px; background: #161a36; }
+  .ca-actions .btn { min-height: 46px; }
+
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
   /* ── 桌機：左營火、右投票與留言 ── */
@@ -593,6 +656,13 @@
     </div>
 
     <div class="col-social">
+      <section class="section card" aria-labelledby="clueTitle">
+        <h2 class="section-title" id="clueTitle">🔍 孕期線索 <small id="clueProgress">主持人逐條公布</small></h2>
+        <div class="clue-head" aria-hidden="true"><span class="b">💙 Boy</span><span></span><span class="g">Girl 💗</span></div>
+        <div class="clues" id="clueList"></div>
+        <div class="clue-foot" id="clueFoot" aria-live="polite"></div>
+      </section>
+
       <section class="section card" aria-labelledby="voteTitle">
         <h2 class="section-title" id="voteTitle">🏕️ 選邊站：你猜是？</h2>
         <form id="voteForm" novalidate>
@@ -706,6 +776,20 @@ const MILESTONES = [
   [0.75, '🚀 75%！再加把勁'],
   [0.9, '⚡ 最後衝刺！全員狂點！'],
 ];
+// 孕期線索：只有題目，媽咪的答案存在 Firebase secret/clues（只有主持人讀得到）
+const CLUES = [
+  { key: 'food', label: '口味', boy: '喜歡吃酸、鹹食', girl: '喜歡吃辣、甜食' },
+  { key: 'nausea', label: '害喜', boy: '害喜嚴重', girl: '害喜不嚴重' },
+  { key: 'belly', label: '肚型', boy: '肚型尖尖', girl: '肚型圓潤' },
+  { key: 'energy', label: '個性', boy: '變勤勞', girl: '變懶惰' },
+  { key: 'skin', label: '皮膚', boy: '皮膚粗糙', girl: '皮膚光滑' },
+  { key: 'swell', label: '水腫', boy: '腳不會水腫', girl: '腳會水腫' },
+  { key: 'heart', label: '胎心音', boy: '胎心音低於 140', girl: '胎心音高於 140' },
+  { key: 'dream', label: '胎夢', boy: '夢到龍、蛇、老虎', girl: '夢到花、水果、首飾' },
+  { key: 'temp', label: '體感', boy: '變怕熱', girl: '變怕冷' },
+  { key: 'mood', label: '情緒', boy: '情緒穩定', girl: '情緒起伏大' },
+];
+const CLUE_KEYS = new Set(CLUES.map((c) => c.key));
 
 const params = new URLSearchParams(location.search);
 const PREVIEW = { boy: 'BOY', girl: 'GIRL' }[(params.get('preview') || '').toLowerCase()] || null;
@@ -722,6 +806,7 @@ const els = {
   leaders: $('leaders'), leaderList: $('leaderList'),
   campfire: $('campfire'), flames: $('flames'), glow: $('glow'),
   voteForm: $('voteForm'), nick: $('nick'), wish: $('wish'), wishCount: $('wishCount'), voteBtn: $('voteBtn'), votedBox: $('votedBox'),
+  clueList: $('clueList'), clueFoot: $('clueFoot'), clueProgress: $('clueProgress'),
   boyCount: $('boyCount'), girlCount: $('girlCount'), boyBar: $('boyBar'), girlBar: $('girlBar'), tallyBar: $('tallyBar'), tallyTotal: $('tallyTotal'),
   wall: $('wall'), wallCount: $('wallCount'),
   countdown: $('countdown'), cdNum: $('cdNum'),
@@ -774,22 +859,34 @@ function toast(msg) {
  *   votes    { <uid>: { nickname, team, wish, ts } }
  *   presence { <uid>: { name, at } }        // 斷線自動移除
  *   reveal   { gender, at }                 // 達標後才寫得進去
- *   secret   { host_key, gender }           // 誰都讀不到
+ *   clues    { <key>: { side, note, at } }  // 已公布的孕期線索（主持人寫）
+ *   secret   { host_key, gender, clues }    // 誰都讀不到（clues 只有主持人讀得到）
  *   hostAuth { <uid>: 主持人密碼 }           // 規則拿來比對 secret/host_key
  * ============================================================ */
 function createFirebaseApi() {
   firebase.initializeApp(FIREBASE_CONFIG);
   const db = firebase.database();
   const SV = firebase.database.ServerValue;
-  const raw = { game: null, reveal: null, votes: {}, clicks: {}, presence: {} };
+  const raw = { game: null, reveal: null, votes: {}, clicks: {}, presence: {}, clues: {} };
   let me = null;
   let offset = 0;
   let name = store.get('tsmc_nick', '');
   let connected = false;
   let h = null;
-  let authed = null;
+  let startAuth;
+  // start() 之前呼叫的主持人操作（例如讀線索答案）也要等登入完成
+  let authed = new Promise((r) => { startAuth = r; });
   let hostAuthed = null;
   const emit = () => h && h.onRaw(raw);
+
+  async function ensureHost() {
+    await authed;
+    if (!hostAuthed) {
+      hostAuthed = db.ref('hostAuth/' + me).set(HOST_KEY || KEEPER_KEY);
+      hostAuthed.catch(() => { hostAuthed = null; });
+    }
+    await hostAuthed;
+  }
 
   function updatePresence() {
     if (!me || !connected) return;
@@ -815,6 +912,7 @@ function createFirebaseApi() {
       db.ref('reveal').on('value', (s) => { raw.reveal = s.val(); emit(); }, fail);
       db.ref('votes').on('value', (s) => { raw.votes = s.val() || {}; emit(); }, fail);
       db.ref('presence').on('value', (s) => { raw.presence = s.val() || {}; emit(); }, fail);
+      db.ref('clues').on('value', (s) => { raw.clues = s.val() || {}; emit(); }, fail);
 
       // 逐筆監聽 clicks，才知道「誰剛剛加了幾下」
       const clicks = db.ref('clicks');
@@ -837,6 +935,7 @@ function createFirebaseApi() {
         emit();
         return me;
       });
+      startAuth(authed);
       authed.catch((err) => {
         console.error(err);
         toast('登入失敗：請確認 Firebase 已啟用「匿名」登入');
@@ -871,13 +970,14 @@ function createFirebaseApi() {
       return false;
     },
 
+    /** 主持人訂閱媽咪的線索答案（規則只讓主持人讀） */
+    async watchAnswers(cb, onErr) {
+      await ensureHost();
+      db.ref('secret/clues').on('value', (s) => cb(s.val() || {}), onErr);
+    },
+
     async host(op, arg) {
-      await authed;
-      if (!hostAuthed) {
-        hostAuthed = db.ref('hostAuth/' + me).set(HOST_KEY || KEEPER_KEY);
-        hostAuthed.catch(() => { hostAuthed = null; });
-      }
-      await hostAuthed;
+      await ensureHost();
       const r = db.ref();
       switch (op) {
         case 'activate': return r.child('game/active').set(true);
@@ -885,9 +985,12 @@ function createFirebaseApi() {
         case 'force_reveal': return r.child('game/force').set(true);
         case 'target': return r.child('game/target').set(arg);
         case 'secret_gender': return r.child('secret/gender').set(arg);
+        case 'clue_answers': return r.child('secret/clues').set(arg);
+        case 'clue_show': return r.child('clues/' + arg.key).set({ ...arg.value, at: SV.TIMESTAMP });
+        case 'clue_hide': return r.child('clues/' + arg).remove();
         case 'reset': return r.update({
           'game/active': false, 'game/force': false, 'game/total': 0, 'game/round': uid().slice(0, 8),
-          clicks: null, reveal: null,
+          clicks: null, reveal: null, clues: null,
         });
         default: throw new Error('unknown_op');
       }
@@ -909,8 +1012,13 @@ function createMockApi(gender) {
   ];
   const raw = {
     game: { active: false, force: false, target: clampInt(params.get('target'), 100, 5, 100000), total: 0, round: 'preview' },
-    reveal: null, votes: {}, clicks: {}, presence: { [me]: { name: store.get('tsmc_nick', '') } },
+    reveal: null, votes: {}, clicks: {}, presence: { [me]: { name: store.get('tsmc_nick', '') } }, clues: {},
   };
+  // 預覽用的假答案（不是媽咪的真實答案）
+  let answers = {};
+  CLUES.forEach((c, i) => { answers[c.key] = { side: i % 3 === 1 ? 'GIRL' : 'BOY' }; });
+  answers.dream.note = '夢到一條白蛇（預覽）';
+  let answersCb = null;
   for (const [id, name, team, wish, ago] of people) {
     raw.presence[id] = { name };
     if (team) raw.votes[id] = { nickname: name, team, wish, ts: t - ago };
@@ -950,7 +1058,15 @@ function createMockApi(gender) {
       emit();
       return true;
     },
-    async host() { throw new Error('preview'); },
+    async watchAnswers(cb) { answersCb = cb; cb(answers); },
+    async host(op, arg) {
+      await sleep(100);
+      if (op === 'clue_answers') { answers = arg; answersCb && answersCb(answers); }
+      else if (op === 'clue_show') raw.clues = { ...raw.clues, [arg.key]: { ...arg.value, at: Date.now() } };
+      else if (op === 'clue_hide') { raw.clues = { ...raw.clues }; delete raw.clues[arg]; }
+      else throw new Error('preview');
+      emit();
+    },
     control: {
       activate() { raw.game.active = true; emit(); },
       deactivate() { raw.game.active = false; emit(); },
@@ -1018,7 +1134,19 @@ function derive(r) {
     online: Object.keys(r.presence || {}).length,
     leaders,
     names,
+    clues: normClues(r.clues),
   };
+}
+
+/** 線索資料 → { key: { side, note, at } }，只留認得的題目 */
+function normClues(obj) {
+  const out = {};
+  for (const [k, v] of Object.entries(obj || {})) {
+    const side = normGender(v && v.side);
+    if (!CLUE_KEYS.has(k) || !side) continue;
+    out[k] = { side, note: cutText(v.note, 40), at: Number(v.at) || 0 };
+  }
+  return out;
 }
 
 const nameOf = (id) => (state && state.names[id]) || '神秘露營客';
@@ -1046,6 +1174,7 @@ function update() {
   state = derive(raw);
   justSent = 0;
   checkMilestones();
+  checkNewClues();
   if (state.reveal && !revealStarted) startReveal(state.reveal);
   else if (!state.reveal && revealStarted) cancelReveal(); // 主持人彩排歸零
   if (state.reached && !state.reveal) maybeTryReveal();
@@ -1211,10 +1340,93 @@ function renderVoteArea() {
   els.votedBox.append(big, p);
 }
 
+/* ---------- 孕期線索 ---------- */
+const clueRows = {};
+
+function buildClues() {
+  for (const c of CLUES) {
+    const row = document.createElement('div');
+    row.className = 'clue-row';
+    const boy = document.createElement('div');
+    boy.className = 'side boy';
+    boy.textContent = c.boy;
+    const mid = document.createElement('div');
+    mid.className = 'mid';
+    const q = document.createElement('b');
+    q.textContent = '?';
+    const lbl = document.createElement('span');
+    lbl.textContent = c.label;
+    mid.append(q, lbl);
+    const girl = document.createElement('div');
+    girl.className = 'side girl';
+    girl.textContent = c.girl;
+    const note = document.createElement('div');
+    note.className = 'clue-note';
+    note.hidden = true;
+    row.append(boy, mid, girl, note);
+    els.clueList.append(row);
+    clueRows[c.key] = { row, boy, girl, q, note };
+  }
+}
+
+function renderClues() {
+  const clues = state ? state.clues : {};
+  let boy = 0, girl = 0;
+  for (const c of CLUES) {
+    const v = clues[c.key];
+    const r = clueRows[c.key];
+    r.row.classList.toggle('on', !!v);
+    r.row.classList.toggle('BOY', !!v && v.side === 'BOY');
+    r.row.classList.toggle('GIRL', !!v && v.side === 'GIRL');
+    r.boy.classList.toggle('hit', !!v && v.side === 'BOY');
+    r.girl.classList.toggle('hit', !!v && v.side === 'GIRL');
+    r.q.textContent = v ? (v.side === 'BOY' ? '👦' : '👧') : '?';
+    r.note.hidden = !(v && v.note);
+    r.note.textContent = v && v.note ? `媽咪：${v.note}` : '';
+    if (v) v.side === 'BOY' ? boy++ : girl++;
+  }
+  const shown = boy + girl;
+  els.clueProgress.textContent = `已公布 ${shown} / ${CLUES.length}`;
+  els.clueFoot.replaceChildren();
+  if (!shown) { els.clueFoot.textContent = '等主持人公布媽咪的症狀，先猜猜看 👀'; return; }
+  const b = document.createElement('span');
+  b.className = 'b';
+  b.textContent = `偏男 ${boy} 項`;
+  const g = document.createElement('span');
+  g.className = 'g';
+  g.textContent = `偏女 ${girl} 項`;
+  els.clueFoot.append('目前線索：', b, ' vs ', g);
+}
+
+let knownClues = null;   // null = 剛打開頁面，不播提示
+
+function checkNewClues() {
+  const keys = Object.keys(state.clues);
+  const prev = knownClues;
+  knownClues = new Set(keys);
+  if (!prev) return;
+  const fresh = CLUES.filter((c) => state.clues[c.key] && !prev.has(c.key));
+  fresh.forEach((c) => {
+    const v = state.clues[c.key];
+    const r = clueRows[c.key].row;
+    r.classList.remove('flash');
+    void r.offsetWidth;
+    r.classList.add('flash');
+    if (fresh.length === 1) {
+      toast(`🔍 新線索：媽咪${v.note || (v.side === 'BOY' ? c.boy : c.girl)}！`);
+      vibrate(40);
+      const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement && document.activeElement.tagName);
+      if (!document.hidden && !typing && innerWidth < 960) r.scrollIntoView({ behavior: REDUCED_MOTION ? 'auto' : 'smooth', block: 'center' });
+    }
+  });
+}
+
 function render() {
   renderMeter();
   renderButton();
   renderOnline();
+  renderClues();
+  updateClueBtn();
   if (state) {
     renderLeaders();
     renderTally();
@@ -1602,22 +1814,163 @@ function makeToolbar(title, hint, buttons) {
   head.append(h);
   const row = document.createElement('div');
   row.className = 'tb-btns';
-  for (const [label, fn, cls] of buttons) {
+  const made = buttons.map(([label, fn, cls]) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = label;
     if (cls) b.className = cls;
     b.addEventListener('click', () => fn(b));
     row.append(b);
-  }
+    return b;
+  });
   bar.append(head, row);
   document.body.append(bar);
   document.body.classList.add('has-preview');
+  return made;
+}
+
+/* ---------- 主持人：孕期線索 ---------- */
+let clueAnswers = null;     // 媽咪的答案（從 secret/clues 讀來，只有主持人有）
+let clueNextBtn = null;
+
+function cleanAnswers(obj) {
+  const out = {};
+  for (const c of CLUES) {
+    const v = obj && obj[c.key];
+    const side = normGender(v && v.side);
+    if (!side) continue;
+    out[c.key] = { side };
+    const note = cutText(v.note, 40);
+    if (note) out[c.key].note = note;
+  }
+  return out;
+}
+
+function nextClue() {
+  if (!clueAnswers || !state) return null;
+  return CLUES.find((c) => clueAnswers[c.key] && !state.clues[c.key]) || null;
+}
+
+function updateClueBtn() {
+  if (!clueNextBtn) return;
+  const total = clueAnswers ? Object.keys(clueAnswers).length : 0;
+  const shown = state ? CLUES.filter((c) => clueAnswers && clueAnswers[c.key] && state.clues[c.key]).length : 0;
+  clueNextBtn.textContent = !clueAnswers ? '🔍 讀取答案中…' : total ? `🔍 公布下一條（${shown}/${total}）` : '🔍 公布下一條（尚未填答案）';
+}
+
+async function revealNextClue() {
+  const c = nextClue();
+  if (!clueAnswers) { toast('答案還在讀取中'); return; }
+  if (!Object.keys(clueAnswers).length) { openClueAdmin(); return; }
+  if (!c) { toast('有填答案的線索都公布完了 🎉'); return; }
+  try { await api.host('clue_show', { key: c.key, value: clueAnswers[c.key] }); } catch (err) { hostError(err); }
+}
+
+async function hideLastClue() {
+  const last = Object.entries(state ? state.clues : {}).sort((a, b) => b[1].at - a[1].at)[0];
+  if (!last) { toast('目前沒有已公布的線索'); return; }
+  const c = CLUES.find((x) => x.key === last[0]);
+  if (!confirm(`收回「${c.label}」這條線索？`)) return;
+  try { await api.host('clue_hide', last[0]); toast('已收回'); } catch (err) { hostError(err); }
+}
+
+function openClueAdmin() {
+  let box = $('clueAdmin');
+  if (box) box.remove();
+  const draft = cleanAnswers(clueAnswers || {});
+  box = document.createElement('div');
+  box.className = 'overlay show';
+  box.id = 'clueAdmin';
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-modal', 'true');
+  const card = document.createElement('div');
+  card.className = 'ca-card';
+  const h = document.createElement('h3');
+  h.textContent = '📝 媽咪的線索答案';
+  const p = document.createElement('p');
+  p.textContent = '選媽咪符合的那一邊，沒選的題目會跳過。答案只存在資料庫，親友看不到，按「公布下一條」才會依序出現。';
+  card.append(h, p);
+  for (const c of CLUES) {
+    const row = document.createElement('div');
+    row.className = 'ca-row';
+    const lbl = document.createElement('div');
+    lbl.className = 'ca-label';
+    lbl.textContent = c.label;
+    if (state && state.clues[c.key]) {
+      const em = document.createElement('em');
+      em.textContent = '已公布';
+      lbl.append(em);
+    }
+    const opts = document.createElement('div');
+    opts.className = 'ca-opts';
+    const btns = ['BOY', 'GIRL'].map((side) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = side;
+      b.textContent = (side === 'BOY' ? '👦 ' : '👧 ') + (side === 'BOY' ? c.boy : c.girl);
+      return b;
+    });
+    const note = document.createElement('input');
+    note.className = 'input';
+    note.maxLength = 40;
+    note.placeholder = c.key === 'dream' ? '補充說明（選填），例：夢到白色的蛇' : '補充說明（選填）';
+    note.value = (draft[c.key] && draft[c.key].note) || '';
+    const sync = () => btns.forEach((b) => b.classList.toggle('sel', !!draft[c.key] && draft[c.key].side === b.classList[0]));
+    btns.forEach((b) => b.addEventListener('click', () => {
+      const side = b.classList[0];
+      if (draft[c.key] && draft[c.key].side === side) delete draft[c.key];   // 再點一次取消
+      else draft[c.key] = { ...(draft[c.key] || {}), side };
+      sync();
+    }));
+    note.addEventListener('input', () => { if (draft[c.key]) draft[c.key].note = note.value; });
+    note.dataset.key = c.key;
+    sync();
+    opts.append(...btns);
+    row.append(lbl, opts, note);
+    card.append(row);
+  }
+  const actions = document.createElement('div');
+  actions.className = 'ca-actions';
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.className = 'btn ghost';
+  cancel.textContent = '取消';
+  cancel.addEventListener('click', () => box.remove());
+  const save = document.createElement('button');
+  save.type = 'button';
+  save.className = 'btn';
+  save.textContent = '儲存答案';
+  save.addEventListener('click', async () => {
+    card.querySelectorAll('input[data-key]').forEach((i) => { if (draft[i.dataset.key]) draft[i.dataset.key].note = i.value; });
+    save.disabled = true;
+    try {
+      await api.host('clue_answers', cleanAnswers(draft));
+      toast(`🤫 已儲存 ${Object.keys(cleanAnswers(draft)).length} 題答案`);
+      box.remove();
+    } catch (err) { hostError(err); save.disabled = false; }
+  });
+  actions.append(cancel, save);
+  card.append(actions);
+  box.append(card);
+  box.addEventListener('click', (e) => { if (e.target === box) box.remove(); });
+  document.body.append(box);
+}
+
+function initClueHost(btn) {
+  clueNextBtn = btn;
+  updateClueBtn();
+  api.watchAnswers(
+    (a) => { clueAnswers = cleanAnswers(a); updateClueBtn(); },
+    (err) => { clueAnswers = {}; updateClueBtn(); hostError(err); },
+  ).catch(hostError);
 }
 
 function initPreviewBar() {
   const c = api.control;
-  makeToolbar(`🧪 預覽模式 · ${PREVIEW === 'BOY' ? '男孩' : '女孩'}`, '不會連到 Firebase', [
+  const [clueBtn] = makeToolbar(`🧪 預覽模式 · ${PREVIEW === 'BOY' ? '男孩' : '女孩'}`, '不會連到 Firebase', [
+    ['🔍 公布下一條', revealNextClue],
+    ['↩ 收回', hideLastClue],
+    ['📝 答案', openClueAdmin],
     ['① 開啟集氣', () => { c.activate(); toast('主持人已開啟集氣！'); }],
     ['暫停', () => c.deactivate()],
     ['+50 模擬親友', () => c.add(50)],
@@ -1625,6 +1978,7 @@ function initPreviewBar() {
     ['模擬人潮：開', (b) => { b.textContent = '模擬人潮：' + (c.toggleCrowd() ? '開' : '關'); }],
     ['重來', () => { store.set('tsmc_voted_team', ''); location.reload(); }, 'warn'],
   ]);
+  initClueHost(clueBtn);
 }
 
 const hostError = (err) => toast(isDenied(err) ? '密碼錯誤，或資料庫還沒設定 secret/host_key' : '操作失敗，請再試一次');
@@ -1633,7 +1987,10 @@ function initHostBar() {
   const send = async (op, arg, okMsg) => {
     try { await api.host(op, arg); toast(okMsg); } catch (err) { hostError(err); }
   };
-  makeToolbar('🎤 主持人遙控', '只有你看得到這列', [
+  const [clueBtn] = makeToolbar('🎤 主持人遙控', '只有你看得到這列', [
+    ['🔍 公布下一條', revealNextClue],
+    ['↩ 收回線索', hideLastClue],
+    ['📝 線索答案', openClueAdmin],
     ['▶ 開啟集氣', () => send('activate', null, '集氣開始！')],
     ['⏸ 暫停', () => send('deactivate', null, '已暫停集氣')],
     ['🎯 目標', () => {
@@ -1642,9 +1999,10 @@ function initHostBar() {
     }],
     ['強制開獎', () => { if (confirm('確定不等集氣，直接讓所有人揭曉嗎？')) send('force_reveal', null, '開獎！'); }, 'warn'],
     ['彩排歸零', () => {
-      if (confirm('點擊數歸零、關閉集氣、清除開獎結果（投票留言和保密性別都保留），確定嗎？')) send('reset', null, '已歸零，可以重新彩排');
+      if (confirm('點擊數歸零、關閉集氣、清除開獎結果、收回所有已公布的線索（投票留言、保密性別、線索答案都保留），確定嗎？')) send('reset', null, '已歸零，可以重新彩排');
     }, 'warn'],
   ]);
+  initClueHost(clueBtn);
 }
 
 /** 保密人事先設定性別：寫入後誰都讀不到，達標的瞬間由規則放行，所有人同步揭曉。 */
@@ -1676,6 +2034,7 @@ setInterval(() => state && renderWall(true), 60000); // 更新「幾分鐘前」
 setInterval(() => { if (state && state.reached && !state.reveal) maybeTryReveal(); }, 4000);
 
 initLights();
+buildClues();
 resize();
 render();
 requestAnimationFrame(frame);
