@@ -460,6 +460,13 @@
   body.rush .meter-fill { box-shadow: 0 0 28px rgba(255, 90, 40, .95); }
   body.rush .ignite.active { animation-duration: .6s; }
 
+  .title-btn {
+    flex: none; min-height: 32px; padding: 4px 12px; border-radius: 999px;
+    font-family: var(--font-body); font-size: 13px; font-weight: 400;
+    color: #ffb3b3; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 106, 106, .5);
+  }
+  .section-title small + .title-btn { margin-left: 8px; }
+
   /* ── 孕期線索 ── */
   .clue-head, .clue-row { display: grid; grid-template-columns: 1fr 46px 1fr; gap: 6px; align-items: stretch; }
   .clue-head { font-family: var(--font-display); font-size: 15px; margin-bottom: 8px; text-align: center; }
@@ -714,7 +721,7 @@
       </section>
 
       <section class="section card" aria-labelledby="wallTitle">
-        <h2 class="section-title" id="wallTitle">🔥 營火祝福牆 <small id="wallCount"></small></h2>
+        <h2 class="section-title" id="wallTitle">🔥 營火祝福牆 <small id="wallCount"></small><button class="title-btn" id="wallReset" type="button" hidden>🧹 重置</button></h2>
         <div class="wall" id="wall"><div class="empty">還沒有人留言，來當第一位圍著營火的人吧！</div></div>
       </section>
     </div>
@@ -985,6 +992,7 @@ function createFirebaseApi() {
         case 'force_reveal': return r.child('game/force').set(true);
         case 'target': return r.child('game/target').set(arg);
         case 'secret_gender': return r.child('secret/gender').set(arg);
+        case 'clear_votes': return r.child('votes').remove();
         case 'clue_answers': return r.child('secret/clues').set(arg);
         case 'clue_show': return r.child('clues/' + arg.key).set({ ...arg.value, at: SV.TIMESTAMP });
         case 'clue_hide': return r.child('clues/' + arg).remove();
@@ -1061,7 +1069,8 @@ function createMockApi(gender) {
     async watchAnswers(cb) { answersCb = cb; cb(answers); },
     async host(op, arg) {
       await sleep(100);
-      if (op === 'clue_answers') { answers = arg; answersCb && answersCb(answers); }
+      if (op === 'clear_votes') raw.votes = {};
+      else if (op === 'clue_answers') { answers = arg; answersCb && answersCb(answers); }
       else if (op === 'clue_show') raw.clues = { ...raw.clues, [arg.key]: { ...arg.value, at: Date.now() } };
       else if (op === 'clue_hide') { raw.clues = { ...raw.clues }; delete raw.clues[arg]; }
       else throw new Error('preview');
@@ -1956,6 +1965,23 @@ function openClueAdmin() {
   document.body.append(box);
 }
 
+/** 主持人：清空祝福牆（留言和選邊站的票一起清掉，大家可以重新投） */
+function initWallReset() {
+  const b = $('wallReset');
+  b.hidden = false;
+  b.addEventListener('click', async () => {
+    const n = state ? state.votes.boy + state.votes.girl : 0;
+    if (!confirm(`清空祝福牆？\n全部 ${n} 則留言和選邊站的票都會刪除，帳篷人氣歸零，大家可以重新投票。\n這個動作無法復原。`)) return;
+    b.disabled = true;
+    try {
+      await api.host('clear_votes');
+      store.set('tsmc_voted_team', '');
+      toast('🧹 祝福牆已清空');
+    } catch (err) { hostError(err); }
+    b.disabled = false;
+  });
+}
+
 function initClueHost(btn) {
   clueNextBtn = btn;
   updateClueBtn();
@@ -1979,6 +2005,7 @@ function initPreviewBar() {
     ['重來', () => { store.set('tsmc_voted_team', ''); location.reload(); }, 'warn'],
   ]);
   initClueHost(clueBtn);
+  initWallReset();
 }
 
 const hostError = (err) => toast(isDenied(err) ? '密碼錯誤，或資料庫還沒設定 secret/host_key' : '操作失敗，請再試一次');
@@ -2003,6 +2030,7 @@ function initHostBar() {
     }, 'warn'],
   ]);
   initClueHost(clueBtn);
+  initWallReset();
 }
 
 /** 保密人事先設定性別：寫入後誰都讀不到，達標的瞬間由規則放行，所有人同步揭曉。 */
