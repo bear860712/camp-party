@@ -467,6 +467,43 @@
   }
   .section-title small + .title-btn { margin-left: 8px; }
 
+  /* ── 押注 ── */
+  .bet-rule { font-size: 14px; color: var(--muted); margin: -4px 0 12px; }
+  .bet-rule b { color: var(--amber); }
+  .bet-me { padding: 12px 14px; border-radius: 14px; background: rgba(0, 0, 0, .22); border: 1px solid rgba(255, 255, 255, .08); margin-bottom: 14px; font-size: 15px; }
+  .bet-me .sub { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .bet-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .chip-btn {
+    flex: 1 1 0; min-width: 0; min-height: 44px; padding: 8px 10px; border-radius: 12px;
+    background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .18);
+    font-weight: 700; font-size: 15px;
+  }
+  .chip-btn.sel { background: var(--amber); color: #2a1c10; border-color: var(--amber); }
+  .chip-btn.warn { border-color: rgba(255, 106, 106, .55); color: #ffb3b3; }
+  .chip-btn:disabled { opacity: .45; cursor: default; }
+  .bet-timer { color: var(--amber); font-variant-numeric: tabular-nums; }
+  .bet-board { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .bet-col h3 { font-size: 14px; margin: 0 0 6px; font-weight: 700; }
+  .bet-col.BOY h3 { color: var(--boy); }
+  .bet-col.GIRL h3 { color: var(--girl); }
+  .bet-col ul, .bet-settle { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .bet-col li { display: flex; justify-content: space-between; gap: 6px; padding: 5px 8px; border-radius: 8px; background: rgba(255, 255, 255, .05); font-size: 14px; }
+  .bet-col li span:first-child, .bet-settle .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bet-col li.me, .bet-settle li.me { outline: 1px solid var(--amber); }
+  .bet-col .none { color: var(--muted); font-size: 13px; background: none; }
+  .bet-sum { margin-top: 6px; font-size: 13px; color: var(--muted); }
+  .bet-settle-title { font-family: var(--font-display); font-size: 17px; margin: 0 0 8px; }
+  .bet-settle li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: rgba(255, 106, 106, .08); border: 1px solid rgba(255, 106, 106, .2); font-size: 15px; }
+  .bet-settle .who { flex: 1; }
+  .bet-settle .amt { font-weight: 700; color: #ffb3b3; white-space: nowrap; }
+  .bet-settle .why { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+  .bet-settle .call { flex: none; min-height: 36px; padding: 4px 10px; border-radius: 10px; background: var(--amber); color: #2a1c10; border: 0; font-weight: 700; font-size: 13px; }
+  .bet-settle .call:disabled { opacity: .4; }
+  .bet-note { margin-top: 10px; font-size: 13px; color: var(--muted); text-align: center; }
+  .bet-admin-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 14px; }
+  .rc-bet { margin-top: 12px; }
+  .rc-bet button { width: 100%; min-height: 44px; border-radius: 14px; border: 0; font-weight: 700; background: #2a1c10; color: #ffd166; }
+
   /* ── 孕期線索 ── */
   .clue-head, .clue-row { display: grid; grid-template-columns: 1fr 46px 1fr; gap: 6px; align-items: stretch; }
   .clue-head { font-family: var(--font-display); font-size: 15px; margin-bottom: 8px; text-align: center; }
@@ -703,9 +740,19 @@
             <textarea class="input" id="wish" name="wish" maxlength="80" placeholder="例如：長期持有，一路長紅！" required></textarea>
             <div class="counter"><span id="wishCount">0</span> / 80</div>
           </div>
+          <div class="field" id="stakeField" hidden>
+            <span class="lbl" style="display:block;font-size:14px;color:var(--muted);margin-bottom:6px" id="stakeLabel">押幾注？押錯要接受懲罰</span>
+            <div class="bet-row" id="stakeOpts" role="radiogroup" aria-label="押注數量"></div>
+          </div>
           <button class="btn" id="voteBtn" type="submit">把祝福丟進營火 🔥</button>
         </form>
         <div class="voted" id="votedBox" hidden></div>
+      </section>
+
+      <section class="section card" id="betCard" aria-labelledby="betTitle" hidden>
+        <h2 class="section-title" id="betTitle">🍻 押注看板 <small id="betStatus"></small></h2>
+        <div class="bet-rule" id="betRule"></div>
+        <div id="betBody"></div>
       </section>
 
       <section class="section card" aria-labelledby="tallyTitle">
@@ -749,6 +796,7 @@
       <div><b id="rcMine">0</b><span>我的貢獻</span></div>
     </div>
     <div class="rc-date" id="rcDate"></div>
+    <div class="rc-bet" id="rcBetWrap" hidden><button id="rcBet" type="button">🍻 看懲罰名單</button></div>
     <div class="rc-actions">
       <button class="secondary" id="rcClose" type="button">回到營地</button>
       <button class="primary" id="rcAgain" type="button">再放一次煙火 🎆</button>
@@ -798,6 +846,16 @@ const CLUES = [
 ];
 const CLUE_KEYS = new Set(CLUES.map((c) => c.key));
 
+// 押注：下注時 1～3 注，加碼時間每次 +1，最多 5 注；押對的人各有 1 次點名權，每人最多被點 2 次
+const BET_OPEN_MAX = 3;
+const BET_MAX = 5;
+const BET_BOOST_MS = 30000;
+const BET_CALL_MAX = 2;
+const BET_PRESETS = [
+  { label: '🍺 喝酒（每注 1 杯）', verb: '喝', unit: '杯', per: 1 },
+  { label: '💪 伏地挺身（每注 10 下）', verb: '做伏地挺身', unit: '下', per: 10 },
+];
+
 const params = new URLSearchParams(location.search);
 const PREVIEW = { boy: 'BOY', girl: 'GIRL' }[(params.get('preview') || '').toLowerCase()] || null;
 const HOST_KEY = params.get('host') || '';
@@ -819,6 +877,9 @@ const els = {
   countdown: $('countdown'), cdNum: $('cdNum'),
   reveal: $('reveal'), rcEmoji: $('rcEmoji'), rcGender: $('rcGender'), rcPun: $('rcPun'),
   rcTotal: $('rcTotal'), rcRight: $('rcRight'), rcMine: $('rcMine'), rcDate: $('rcDate'), rcClose: $('rcClose'), rcAgain: $('rcAgain'),
+  rcBetWrap: $('rcBetWrap'), rcBet: $('rcBet'),
+  stakeField: $('stakeField'), stakeOpts: $('stakeOpts'), stakeLabel: $('stakeLabel'),
+  betCard: $('betCard'), betStatus: $('betStatus'), betRule: $('betRule'), betBody: $('betBody'),
   toast: $('toast'),
 };
 
@@ -867,6 +928,9 @@ function toast(msg) {
  *   presence { <uid>: { name, at } }        // 斷線自動移除
  *   reveal   { gender, at }                 // 達標後才寫得進去
  *   clues    { <key>: { side, note, at } }  // 已公布的孕期線索（主持人寫）
+ *   bet      { cfg: { on, verb, unit, per }, lock, boost,   // 押注（主持人寫設定）
+ *              stakes: { <uid>: { team, n, pen, bw, ts } }, // 各自的押注；pen = 換邊罰的次數
+ *              calls:  { <uid>: 被點名的 uid } }             // 開獎後押對的人點名
  *   secret   { host_key, gender, clues }    // 誰都讀不到（clues 只有主持人讀得到）
  *   hostAuth { <uid>: 主持人密碼 }           // 規則拿來比對 secret/host_key
  * ============================================================ */
@@ -874,7 +938,7 @@ function createFirebaseApi() {
   firebase.initializeApp(FIREBASE_CONFIG);
   const db = firebase.database();
   const SV = firebase.database.ServerValue;
-  const raw = { game: null, reveal: null, votes: {}, clicks: {}, presence: {}, clues: {} };
+  const raw = { game: null, reveal: null, votes: {}, clicks: {}, presence: {}, clues: {}, bet: null, betDenied: false };
   let me = null;
   let offset = 0;
   let name = store.get('tsmc_nick', '');
@@ -920,6 +984,9 @@ function createFirebaseApi() {
       db.ref('votes').on('value', (s) => { raw.votes = s.val() || {}; emit(); }, fail);
       db.ref('presence').on('value', (s) => { raw.presence = s.val() || {}; emit(); }, fail);
       db.ref('clues').on('value', (s) => { raw.clues = s.val() || {}; emit(); }, fail);
+      // 規則還沒更新時讀不到 bet：只停用押注，不影響其他功能
+      db.ref('bet').on('value', (s) => { raw.bet = s.val() || {}; raw.betDenied = false; emit(); },
+        (err) => { console.warn('bet:', err); raw.bet = null; raw.betDenied = true; emit(); });
 
       // 逐筆監聽 clicks，才知道「誰剛剛加了幾下」
       const clicks = db.ref('clicks');
@@ -962,6 +1029,16 @@ function createFirebaseApi() {
 
     setName(n) { name = n; updatePresence(); },
 
+    async setStake(s) {
+      await authed;
+      await db.ref('bet/stakes/' + me).set({ team: s.team, n: s.n, pen: s.pen || 0, bw: s.bw || 0, ts: SV.TIMESTAMP });
+    },
+
+    async callOut(target) {
+      await authed;
+      await db.ref('bet/calls/' + me).set(target);
+    },
+
     /** 猜性別寫入 reveal：規則只放行和 secret/gender 相同、且已達標的寫入。 */
     async tryReveal() {
       await authed;
@@ -986,19 +1063,26 @@ function createFirebaseApi() {
     async host(op, arg) {
       await ensureHost();
       const r = db.ref();
+      // 讀得到 bet 才代表規則已更新；沒更新時不能把 bet 路徑混進多路徑寫入，否則整筆會失敗
+      const betOk = !raw.betDenied && raw.bet !== null;
+      const betOn = betOk && raw.bet.cfg && raw.bet.cfg.on === true;
       switch (op) {
-        case 'activate': return r.child('game/active').set(true);
+        case 'activate': return r.update(betOn ? { 'game/active': true, 'bet/lock': true } : { 'game/active': true });
         case 'deactivate': return r.child('game/active').set(false);
         case 'force_reveal': return r.child('game/force').set(true);
         case 'target': return r.child('game/target').set(arg);
         case 'secret_gender': return r.child('secret/gender').set(arg);
-        case 'clear_votes': return r.child('votes').remove();
+        case 'clear_votes': return r.update(betOk ? { votes: null, 'bet/stakes': null, 'bet/calls': null } : { votes: null });
         case 'clue_answers': return r.child('secret/clues').set(arg);
         case 'clue_show': return r.child('clues/' + arg.key).set({ ...arg.value, at: SV.TIMESTAMP });
         case 'clue_hide': return r.child('clues/' + arg).remove();
+        case 'bet_cfg': return r.child('bet/cfg').set(arg);
+        case 'bet_lock': return r.child('bet/lock').set(arg);
+        case 'bet_boost': return r.child('bet/boost').set(Date.now() + offset + BET_BOOST_MS);
         case 'reset': return r.update({
           'game/active': false, 'game/force': false, 'game/total': 0, 'game/round': uid().slice(0, 8),
           clicks: null, reveal: null, clues: null,
+          ...(betOk ? { 'bet/lock': null, 'bet/boost': null, 'bet/calls': null } : {}),
         });
         default: throw new Error('unknown_op');
       }
@@ -1021,7 +1105,12 @@ function createMockApi(gender) {
   const raw = {
     game: { active: false, force: false, target: clampInt(params.get('target'), 100, 5, 100000), total: 0, round: 'preview' },
     reveal: null, votes: {}, clicks: {}, presence: { [me]: { name: store.get('tsmc_nick', '') } }, clues: {},
+    bet: { cfg: { on: false, ...BET_PRESETS[0] }, lock: false, boost: 0, stakes: {}, calls: {} },
+    betDenied: false,
   };
+  delete raw.bet.cfg.label;
+  const fakeStakes = { f1: 2, f2: 1, f3: 3, f4: 2, f5: 1 };
+  const betOpen = () => !raw.reveal && ((!raw.bet.lock && !raw.game.active) || raw.bet.boost > Date.now());
   // 預覽用的假答案（不是媽咪的真實答案）
   let answers = {};
   CLUES.forEach((c, i) => { answers[c.key] = { side: i % 3 === 1 ? 'GIRL' : 'BOY' }; });
@@ -1030,6 +1119,7 @@ function createMockApi(gender) {
   for (const [id, name, team, wish, ago] of people) {
     raw.presence[id] = { name };
     if (team) raw.votes[id] = { nickname: name, team, wish, ts: t - ago };
+    if (team && fakeStakes[id]) raw.bet.stakes[id] = { team, n: fakeStakes[id], pen: 0, bw: 0, ts: t - ago };
   }
   let h = null;
   let crowd = true;
@@ -1059,17 +1149,57 @@ function createMockApi(gender) {
       emit();
     },
     setName(name) { raw.presence[me] = { name }; emit(); },
+    async setStake(s) {
+      await sleep(120);
+      if (!raw.bet.cfg.on || !betOpen()) throw new Error('PERMISSION_DENIED');
+      raw.bet.stakes = { ...raw.bet.stakes, [me]: { team: s.team, n: s.n, pen: s.pen || 0, bw: s.bw || 0, ts: Date.now() } };
+      emit();
+    },
+    async callOut(target) {
+      await sleep(120);
+      const mine = raw.bet.stakes[me];
+      if (!raw.reveal || raw.bet.calls[me] || !mine || mine.team !== raw.reveal.gender) throw new Error('PERMISSION_DENIED');
+      raw.bet.calls = { ...raw.bet.calls, [me]: target };
+      emit();
+    },
     async tryReveal() {
       if (raw.reveal || !(raw.game.total >= raw.game.target || raw.game.force)) return false;
       await sleep(150);
       raw.reveal = { gender, at: Date.now() };
       emit();
+      // 模擬押對的親友陸續點名（每人最多被點 2 次）
+      if (raw.bet.cfg.on) {
+        const losers = Object.keys(raw.bet.stakes).filter((id) => raw.bet.stakes[id].team !== gender);
+        Object.keys(fakeStakes).filter((id) => raw.bet.stakes[id] && raw.bet.stakes[id].team === gender).forEach((id, i) => {
+          setTimeout(() => {
+            const counts = {};
+            Object.values(raw.bet.calls).forEach((to) => { counts[to] = (counts[to] || 0) + 1; });
+            const avail = losers.filter((l) => (counts[l] || 0) < BET_CALL_MAX);
+            const pick = avail[Math.floor(Math.random() * avail.length)];
+            if (pick && !raw.bet.calls[id]) { raw.bet.calls = { ...raw.bet.calls, [id]: pick }; emit(); }
+          }, 7000 + i * 2500);
+        });
+      }
       return true;
     },
     async watchAnswers(cb) { answersCb = cb; cb(answers); },
     async host(op, arg) {
       await sleep(100);
-      if (op === 'clear_votes') raw.votes = {};
+      if (op === 'clear_votes') { raw.votes = {}; raw.bet.stakes = {}; raw.bet.calls = {}; }
+      else if (op === 'bet_cfg') raw.bet.cfg = { ...arg };
+      else if (op === 'bet_lock') raw.bet.lock = arg;
+      else if (op === 'bet_boost') {
+        raw.bet.boost = Date.now() + BET_BOOST_MS;
+        // 模擬一位親友在加碼時間叛逃
+        setTimeout(() => {
+          const s = raw.bet.stakes.f3;
+          if (!s || !raw.bet.cfg.on || !betOpen()) return;
+          const team = s.team === 'BOY' ? 'GIRL' : 'BOY';
+          raw.bet.stakes = { ...raw.bet.stakes, f3: { ...s, team, pen: s.pen + 1, bw: raw.bet.boost, ts: Date.now() } };
+          raw.votes = { ...raw.votes, f3: { ...raw.votes.f3, team } };
+          emit();
+        }, 4000);
+      }
       else if (op === 'clue_answers') { answers = arg; answersCb && answersCb(answers); }
       else if (op === 'clue_show') raw.clues = { ...raw.clues, [arg.key]: { ...arg.value, at: Date.now() } };
       else if (op === 'clue_hide') { raw.clues = { ...raw.clues }; delete raw.clues[arg]; }
@@ -1077,10 +1207,10 @@ function createMockApi(gender) {
       emit();
     },
     control: {
-      activate() { raw.game.active = true; emit(); },
+      activate() { raw.game.active = true; if (raw.bet.cfg.on) raw.bet.lock = true; emit(); },
       deactivate() { raw.game.active = false; emit(); },
       add(n) { add('f3', n); },
-      fill() { raw.game.active = true; emit(); add('f1', Math.max(1, raw.game.target - raw.game.total)); },
+      fill() { raw.game.active = true; if (raw.bet.cfg.on) raw.bet.lock = true; emit(); add('f1', Math.max(1, raw.game.target - raw.game.total)); },
       toggleCrowd() { crowd = !crowd; return crowd; },
     },
   };
@@ -1144,6 +1274,34 @@ function derive(r) {
     leaders,
     names,
     clues: normClues(r.clues),
+    bet: deriveBet(r.bet, r.betDenied, me),
+  };
+}
+
+/** 押注資料 → 畫面用格式；規則沒更新（denied）或沒開啟時 on = false */
+function deriveBet(b, denied, me) {
+  const src = b && typeof b === 'object' ? b : {};
+  const cfg = src.cfg || {};
+  const stakes = {};
+  for (const [id, s] of Object.entries(src.stakes || {})) {
+    const team = normGender(s && s.team);
+    const n = clampInt(s && s.n, 0, 0, BET_MAX);
+    if (!team || n < 1) continue;
+    stakes[id] = { team, n, pen: clampInt(s.pen, 0, 0, 20), bw: Number(s.bw) || 0 };
+  }
+  const calls = {};
+  for (const [from, to] of Object.entries(src.calls || {})) if (typeof to === 'string' && stakes[to]) calls[from] = to;
+  return {
+    denied: !!denied,
+    on: !denied && cfg.on === true,
+    verb: cutText(cfg.verb, 12) || BET_PRESETS[0].verb,
+    unit: cutText(cfg.unit, 6) || BET_PRESETS[0].unit,
+    per: clampInt(cfg.per, 1, 1, 100),
+    lock: src.lock === true,
+    boostUntil: Number(src.boost) || 0,
+    stakes,
+    calls,
+    mine: (me && stakes[me]) || null,
   };
 }
 
@@ -1180,10 +1338,12 @@ function onRaw(r) {
 function update() {
   updateTimer = 0;
   if (!raw || !raw.game) return;
+  const prev = state;
   state = derive(raw);
   justSent = 0;
   checkMilestones();
   checkNewClues();
+  checkBetEvents(prev);
   if (state.reveal && !revealStarted) startReveal(state.reveal);
   else if (!state.reveal && revealStarted) cancelReveal(); // 主持人彩排歸零
   if (state.reached && !state.reveal) maybeTryReveal();
@@ -1430,6 +1590,286 @@ function checkNewClues() {
   });
 }
 
+/* ---------- 押注 ---------- */
+const teamName = (t) => (t === 'BOY' ? '💙 藍色帳篷' : '💗 粉色帳篷');
+const betAmt = (n) => `${n * state.bet.per} ${state.bet.unit}`;
+let stakePick = 1;
+let betSig = '';
+let betBusy = false;
+
+/** open 自由下注 → locked 封盤（主持人封盤或開啟集氣）；boost 加碼時間；settle 開獎後 */
+function betPhase() {
+  const b = state.bet;
+  if (state.reveal) return 'settle';
+  if (b.boostUntil > api.serverNow()) return 'boost';
+  if (b.lock || state.is_active) return 'locked';
+  return 'open';
+}
+
+function checkBetEvents(prev) {
+  if (!prev || !prev.bet.on || !state.bet.on) return;
+  const { verb, per, unit } = state.bet;
+  if (state.bet.boostUntil > prev.bet.boostUntil && state.bet.boostUntil > api.serverNow()) {
+    toast('⏱️ 加碼時間！30 秒內可以加碼或換邊');
+    vibrate(60);
+  }
+  const me = api && api.me;   // 自己的動作已經有操作提示，不再重複廣播
+  for (const [id, s] of Object.entries(state.bet.stakes)) {
+    const old = prev.bet.stakes[id];
+    if (id !== me && old && s.team !== old.team && s.pen > old.pen) {
+      toast(`😱 ${nameOf(id)} 叛逃到${teamName(s.team)}！先${verb} ${per} ${unit}`);
+      vibrate(60);
+    }
+  }
+  for (const [from, to] of Object.entries(state.bet.calls)) {
+    if (from !== me && !prev.bet.calls[from]) {
+      toast(to === me ? `👉 ${nameOf(from)} 點名你！${verb} +${per} ${unit}` : `👉 ${nameOf(from)} 點名 ${nameOf(to)}：${verb} +${per} ${unit}`);
+    }
+  }
+}
+
+async function betAction(fn, okMsg) {
+  if (betBusy) return;
+  betBusy = true;
+  try {
+    await withTimeout(fn(), 10000);
+    if (okMsg) toast(okMsg);
+  } catch (err) {
+    toast(isDenied(err) ? '現在不能改押注（可能已封盤）' : '送出失敗，請再試一次');
+  } finally {
+    betBusy = false;
+    renderBet(true);
+  }
+}
+
+function chip(label, { sel = false, warn = false, disabled = false, onClick } = {}) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'chip-btn' + (sel ? ' sel' : '') + (warn ? ' warn' : '');
+  b.textContent = label;
+  b.disabled = disabled;
+  if (onClick) b.addEventListener('click', onClick);
+  return b;
+}
+
+/** 投票表單裡的「押多少」：只在押注開啟、自由下注期間、還沒投票時出現 */
+function renderStakeField(ph) {
+  const show = state.bet.on && ph === 'open' && !state.myVote;
+  els.stakeField.hidden = !show;
+  if (!show) return;
+  els.stakeLabel.textContent = `押多少？押錯就要${state.bet.verb}這麼多`;
+  els.stakeOpts.replaceChildren(...[1, 2, 3].map((n) => {
+    const b = chip(betAmt(n), { sel: stakePick === n, onClick: () => { stakePick = n; renderStakeField(ph); } });
+    b.setAttribute('role', 'radio');
+    b.setAttribute('aria-checked', String(stakePick === n));
+    return b;
+  }));
+}
+
+function renderBet(force = false) {
+  const b = state && state.bet;
+  const show = !!b && b.on;
+  els.betCard.hidden = !show;
+  if (!show) { els.stakeField.hidden = true; els.rcBetWrap.hidden = true; return; }
+  const ph = betPhase();
+  const left = Math.max(0, Math.ceil((b.boostUntil - api.serverNow()) / 1000));
+  renderStakeField(ph);
+  els.rcBetWrap.hidden = !(state.reveal && Object.keys(b.stakes).length);
+  const sig = JSON.stringify([b, ph, left, state.myVote && state.myVote.team, state.reveal, state.names, betBusy]);
+  if (!force && sig === betSig) return;
+  betSig = sig;
+
+  els.betStatus.textContent = { open: '自由下注中', boost: '', locked: '🔒 已封盤', settle: '🍻 結算' }[ph];
+  if (ph === 'boost') {
+    const t = document.createElement('span');
+    t.className = 'bet-timer';
+    t.textContent = `⏱️ 加碼中 ${left} 秒`;
+    els.betStatus.replaceChildren(t);
+  }
+  const strong = document.createElement('b');
+  strong.textContent = b.verb;
+  els.betRule.replaceChildren('押錯的人要', strong, `：每注 ${b.per} ${b.unit}`);
+
+  const parts = [];
+  if (ph === 'settle') parts.push(buildSettle());
+  else {
+    parts.push(buildMyBet(ph));
+    parts.push(buildBoard());
+  }
+  els.betBody.replaceChildren(...parts);
+}
+
+function buildMyBet(ph) {
+  const b = state.bet;
+  const mine = b.mine;
+  const vote = state.myVote;
+  const box = document.createElement('div');
+  box.className = 'bet-me';
+  const line = document.createElement('div');
+  const sub = document.createElement('span');
+  sub.className = 'sub';
+  box.append(line);
+  const pen = mine && mine.pen ? `（換邊已罰 ${mine.pen * b.per} ${b.unit}）` : '';
+
+  if (!vote) {
+    line.textContent = ph === 'open' ? '先在上面選邊站，就能一起押注 👆' : '🔒 已封盤，這次不能押注了';
+    return box;
+  }
+  if (ph === 'open') {
+    const team = vote.team;
+    line.textContent = mine ? `你押 ${teamName(team)}：${betAmt(mine.n)}` : `你選了 ${teamName(team)}，還沒押注`;
+    sub.textContent = '開啟集氣前都可以改';
+    const row = document.createElement('div');
+    row.className = 'bet-row';
+    [1, 2, 3].forEach((n) => row.append(chip(betAmt(n), {
+      sel: !!mine && mine.n === n,
+      disabled: betBusy,
+      onClick: () => betAction(() => api.setStake({ team, n, pen: mine ? mine.pen : 0, bw: mine ? mine.bw : 0 }), `已押 ${betAmt(n)}`),
+    })));
+    box.append(sub, row);
+    return box;
+  }
+  if (!mine) {
+    line.textContent = ph === 'boost' ? '你沒有押注，加碼時間只開放給有押注的人' : '🔒 已封盤，你這次沒有押注';
+    return box;
+  }
+  if (ph === 'boost') {
+    const used = mine.bw === b.boostUntil;
+    const other = mine.team === 'BOY' ? 'GIRL' : 'BOY';
+    line.textContent = `你押 ${teamName(mine.team)}：${betAmt(mine.n)}${pen}`;
+    sub.textContent = used ? '這次加碼時間你已經出手了' : '每次加碼時間只能選一個動作';
+    const row = document.createElement('div');
+    row.className = 'bet-row';
+    row.append(
+      chip(mine.n >= BET_MAX ? `已押滿 ${betAmt(BET_MAX)}` : `＋1 加碼（變 ${betAmt(mine.n + 1)}）`, {
+        disabled: used || betBusy || mine.n >= BET_MAX,
+        onClick: () => betAction(() => api.setStake({ ...mine, n: mine.n + 1, bw: b.boostUntil }), `🔥 加碼成功：${betAmt(mine.n + 1)}`),
+      }),
+      chip(`換到${teamName(other)}（先${b.verb} ${b.per} ${b.unit}）`, {
+        warn: true,
+        disabled: used || betBusy,
+        onClick: () => {
+          if (!confirm(`確定換到${teamName(other)}？\n要先${b.verb} ${b.per} ${b.unit}！`)) return;
+          betAction(async () => {
+            await api.setStake({ ...mine, team: other, pen: mine.pen + 1, bw: b.boostUntil });
+            store.set('tsmc_voted_team', other);
+            await api.vote({ nickname: vote.name, team: other, wish: vote.wish || '加油！' }).catch(() => {});
+          }, `叛逃成功！先${b.verb} ${b.per} ${b.unit} 🍺`);
+        },
+      }),
+    );
+    box.append(sub, row);
+    return box;
+  }
+  line.textContent = `🔒 已封盤：你押 ${teamName(mine.team)}：${betAmt(mine.n)}${pen}`;
+  return box;
+}
+
+function buildBoard() {
+  const b = state.bet;
+  const me = api && api.me;
+  const wrap = document.createElement('div');
+  wrap.className = 'bet-board';
+  for (const team of ['BOY', 'GIRL']) {
+    const list = Object.entries(b.stakes).filter(([, s]) => s.team === team).sort((x, y) => y[1].n - x[1].n);
+    const col = document.createElement('div');
+    col.className = 'bet-col ' + team;
+    const h = document.createElement('h3');
+    h.textContent = team === 'BOY' ? '💙 押男寶' : '💗 押女寶';
+    const ul = document.createElement('ul');
+    if (!list.length) {
+      const li = document.createElement('li');
+      li.className = 'none';
+      li.textContent = '還沒有人押';
+      ul.append(li);
+    }
+    for (const [id, s] of list) {
+      const li = document.createElement('li');
+      if (id === me) li.className = 'me';
+      const n = document.createElement('span');
+      n.textContent = nameOf(id) + (s.pen ? ' 🔄' : '');
+      const a = document.createElement('span');
+      a.textContent = betAmt(s.n);
+      li.append(n, a);
+      ul.append(li);
+    }
+    const sum = document.createElement('div');
+    sum.className = 'bet-sum';
+    sum.textContent = `${list.length} 人・共 ${betAmt(list.reduce((t, [, s]) => t + s.n, 0))}`;
+    col.append(h, ul, sum);
+    wrap.append(col);
+  }
+  return wrap;
+}
+
+function buildSettle() {
+  const b = state.bet;
+  const gender = state.reveal.gender;
+  const me = api && api.me;
+  const frag = document.createElement('div');
+  const counts = {};
+  Object.values(b.calls).forEach((to) => { counts[to] = (counts[to] || 0) + 1; });
+  const mine = b.mine;
+  const iWon = !!mine && mine.team === gender;
+  const myCall = me ? b.calls[me] : null;
+  const canCall = iWon && !myCall && !betBusy;
+
+  const title = document.createElement('h3');
+  title.className = 'bet-settle-title';
+  title.textContent = `🍻 懲罰名單（押${gender === 'BOY' ? '女寶' : '男寶'}的人）`;
+  const ul = document.createElement('ul');
+  ul.className = 'bet-settle';
+  const losers = Object.entries(b.stakes).filter(([, s]) => s.team !== gender)
+    .map(([id, s]) => ({ id, s, c: counts[id] || 0 }))
+    .sort((x, y) => (y.s.n + y.c) - (x.s.n + x.c));
+  if (!losers.length) {
+    const li = document.createElement('li');
+    li.textContent = '全員押對！沒有人要接受懲罰 🎉';
+    ul.append(li);
+  }
+  for (const { id, s, c } of losers) {
+    const li = document.createElement('li');
+    if (id === me) li.className = 'me';
+    const who = document.createElement('span');
+    who.className = 'who';
+    who.textContent = nameOf(id) + (id === me ? '（你）' : '');
+    const why = document.createElement('span');
+    why.className = 'why';
+    why.textContent = `押 ${betAmt(s.n)}` + (c ? `・被點名 +${c * b.per}` : '');
+    who.append(why);
+    const amt = document.createElement('span');
+    amt.className = 'amt';
+    amt.textContent = `${b.verb} ${betAmt(s.n + c)}`;
+    li.append(who, amt);
+    if (iWon && !myCall) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'call';
+      btn.textContent = c >= BET_CALL_MAX ? '已滿' : '👉 點名';
+      btn.disabled = !canCall || c >= BET_CALL_MAX;
+      btn.addEventListener('click', () => {
+        if (!confirm(`點名 ${nameOf(id)}？對方要多${b.verb} ${b.per} ${b.unit}，點了不能改。`)) return;
+        betAction(() => api.callOut(id), `👉 已點名 ${nameOf(id)}`);
+      });
+      li.append(btn);
+    }
+    ul.append(li);
+  }
+  frag.append(title, ul);
+
+  const note = document.createElement('div');
+  note.className = 'bet-note';
+  const winners = Object.entries(b.stakes).filter(([, s]) => s.team === gender).map(([id]) => nameOf(id));
+  const lines = [];
+  if (winners.length) lines.push(`押對的人：${winners.join('、')}`);
+  if (iWon) lines.push(myCall ? `你點名了 ${nameOf(myCall)}` : `你有 1 次點名權，選一個人加碼懲罰（每人最多被點 ${BET_CALL_MAX} 次）`);
+  lines.push('換邊的懲罰在換邊當下就要完成，不算在這裡');
+  note.textContent = lines.join('\n');
+  note.style.whiteSpace = 'pre-line';
+  frag.append(note);
+  return frag;
+}
+
 function render() {
   renderMeter();
   renderButton();
@@ -1441,6 +1881,7 @@ function render() {
     renderTally();
     renderWall();
     renderVoteArea();
+    renderBet();
   }
 }
 
@@ -1566,6 +2007,7 @@ els.voteForm.addEventListener('submit', async (e) => {
   if (!team) { toast(ERRORS.team_required); return; }
   if (!wish) { toast(ERRORS.wish_required); els.wish.focus(); return; }
 
+  const withStake = !els.stakeField.hidden;
   els.voteBtn.disabled = true;
   els.voteBtn.textContent = '送出中…';
   try {
@@ -1575,6 +2017,14 @@ els.voteForm.addEventListener('submit', async (e) => {
     api.setName(nickname);
     toast(team === 'BOY' ? '💙 歡迎加入藍色帳篷！' : '💗 歡迎加入粉色帳篷！');
     spawnSparks(30);
+    if (withStake) {
+      try {
+        await withTimeout(api.setStake({ team, n: stakePick, pen: 0, bw: 0 }), 10000);
+        toast(`${team === 'BOY' ? '💙' : '💗'} 已加入，押了 ${betAmt(stakePick)}！`);
+      } catch {
+        toast('投票成功，但押注沒送出，請到押注看板再押一次');
+      }
+    }
   } catch (err) {
     toast(isDenied(err) ? ERRORS.voting_closed : err.message === 'timeout' ? '網路不穩，連上後會自動送出' : '送出失敗，請稍後再試');
   } finally {
@@ -1669,6 +2119,10 @@ function fireworks(gender, duration = 7000) {
 }
 
 els.rcClose.addEventListener('click', () => els.reveal.classList.remove('show'));
+els.rcBet.addEventListener('click', () => {
+  els.reveal.classList.remove('show');
+  els.betCard.scrollIntoView({ behavior: REDUCED_MOTION ? 'auto' : 'smooth', block: 'start' });
+});
 els.rcAgain.addEventListener('click', () => state?.reveal && fireworks(state.reveal.gender, 4000));
 els.ignite.parentElement.addEventListener('click', () => {
   if (phase() === 'revealed' && revealStarted && !els.countdown.classList.contains('show')) showRevealCard(state.reveal.gender);
@@ -1971,7 +2425,8 @@ function initWallReset() {
   b.hidden = false;
   b.addEventListener('click', async () => {
     const n = state ? state.votes.boy + state.votes.girl : 0;
-    if (!confirm(`清空祝福牆？\n全部 ${n} 則留言和選邊站的票都會刪除，帳篷人氣歸零，大家可以重新投票。\n這個動作無法復原。`)) return;
+    const betNote = state && state.bet.on ? '押注也會一起清掉。\n' : '';
+    if (!confirm(`清空祝福牆？\n全部 ${n} 則留言和選邊站的票都會刪除，帳篷人氣歸零，大家可以重新投票。\n${betNote}這個動作無法復原。`)) return;
     b.disabled = true;
     try {
       await api.host('clear_votes');
@@ -1991,12 +2446,93 @@ function initClueHost(btn) {
   ).catch(hostError);
 }
 
+/* ---------- 主持人：押注設定 ---------- */
+function openBetAdmin() {
+  let box = $('betAdmin');
+  if (box) box.remove();
+  box = document.createElement('div');
+  box.className = 'overlay show';
+  box.id = 'betAdmin';
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-modal', 'true');
+  const card = document.createElement('div');
+  card.className = 'ca-card';
+  const h = document.createElement('h3');
+  h.textContent = '🍻 押注設定';
+  card.append(h);
+  const para = (text) => { const p = document.createElement('p'); p.textContent = text; card.append(p); return p; };
+  const row = (...btns) => { const r = document.createElement('div'); r.className = 'bet-admin-row'; r.append(...btns); card.append(r); };
+  const reopen = () => setTimeout(openBetAdmin, 300);
+  const run = (op, arg, msg) => api.host(op, arg).then(() => { toast(msg); reopen(); }).catch(hostError);
+
+  const b = state && state.bet;
+  if (!b || b.denied) {
+    para('讀不到押注資料：請先到 Firebase Console → Realtime Database → 規則，貼上新版的 database.rules.json 並發布。');
+  } else {
+    const cfg = { on: b.on, verb: b.verb, unit: b.unit, per: b.per };
+    para(`押注功能：${b.on ? '✅ 開啟中' : '⛔ 已關閉'}（關閉時親友完全看不到押注）`);
+    row(chip(b.on ? '關閉押注' : '開啟押注', {
+      sel: !b.on,
+      onClick: () => run('bet_cfg', { ...cfg, on: !b.on }, b.on ? '押注已關閉' : '🍻 押注已開啟'),
+    }));
+
+    para(`懲罰內容：押錯要「${b.verb}」，每注 ${b.per} ${b.unit}`);
+    row(
+      ...BET_PRESETS.map((p) => chip(p.label, {
+        sel: p.verb === b.verb && p.unit === b.unit && p.per === b.per,
+        onClick: () => run('bet_cfg', { ...cfg, verb: p.verb, unit: p.unit, per: p.per }, `懲罰改為：${p.label}`),
+      })),
+      chip('✏️ 自訂', {
+        onClick: () => {
+          const verb = cutText(prompt('押錯要做什麼？（例如：喝、做伏地挺身、唱歌）', b.verb), 12);
+          if (!verb) return;
+          const unit = cutText(prompt('單位是什麼？（例如：杯、下、首）', b.unit), 6);
+          if (!unit) return;
+          const per = clampInt(prompt(`每注要${verb}幾${unit}？`, b.per), 0, 0, 100);
+          if (per < 1) { toast('每注至少要 1'); return; }
+          run('bet_cfg', { ...cfg, verb, unit, per }, `懲罰改為：每注${verb} ${per} ${unit}`);
+        },
+      }),
+    );
+
+    const locked = b.lock || state.is_active;
+    para(`下注狀態：${state.reveal ? '已開獎' : locked ? '🔒 已封盤' : '自由下注中'}（開啟集氣時會自動封盤）`);
+    row(chip(b.lock ? '🔓 重新開放下注' : '🔒 封盤', {
+      disabled: !!state.reveal,
+      onClick: () => run('bet_lock', !b.lock, b.lock ? '已重新開放下注' : '🔒 已封盤'),
+    }));
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'ca-actions';
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'btn ghost';
+  close.textContent = '關閉';
+  close.addEventListener('click', () => box.remove());
+  actions.append(close);
+  card.append(actions);
+  box.append(card);
+  box.addEventListener('click', (e) => { if (e.target === box) box.remove(); });
+  document.body.append(box);
+}
+
+function startBoost() {
+  const b = state && state.bet;
+  if (!b || !b.on) { toast('押注功能還沒開啟（按 🍻 押注）'); return; }
+  if (state.reveal) { toast('已經開獎了'); return; }
+  if (state.is_active) { toast('集氣進行中不能加碼，先暫停集氣'); return; }
+  api.host('bet_boost').then(() => toast('⏱️ 加碼時間開始！')).catch(hostError);
+}
+
 function initPreviewBar() {
   const c = api.control;
   const [clueBtn] = makeToolbar(`🧪 預覽模式 · ${PREVIEW === 'BOY' ? '男孩' : '女孩'}`, '不會連到 Firebase', [
     ['🔍 公布下一條', revealNextClue],
     ['↩ 收回', hideLastClue],
     ['📝 答案', openClueAdmin],
+    ['🍻 押注', openBetAdmin],
+    ['⏱️ 加碼 30 秒', startBoost],
     ['① 開啟集氣', () => { c.activate(); toast('主持人已開啟集氣！'); }],
     ['暫停', () => c.deactivate()],
     ['+50 模擬親友', () => c.add(50)],
@@ -2018,6 +2554,8 @@ function initHostBar() {
     ['🔍 公布下一條', revealNextClue],
     ['↩ 收回線索', hideLastClue],
     ['📝 線索答案', openClueAdmin],
+    ['🍻 押注', openBetAdmin],
+    ['⏱️ 加碼 30 秒', startBoost],
     ['▶ 開啟集氣', () => send('activate', null, '集氣開始！')],
     ['⏸ 暫停', () => send('deactivate', null, '已暫停集氣')],
     ['🎯 目標', () => {
@@ -2026,7 +2564,7 @@ function initHostBar() {
     }],
     ['強制開獎', () => { if (confirm('確定不等集氣，直接讓所有人揭曉嗎？')) send('force_reveal', null, '開獎！'); }, 'warn'],
     ['彩排歸零', () => {
-      if (confirm('點擊數歸零、關閉集氣、清除開獎結果、收回所有已公布的線索（投票留言、保密性別、線索答案都保留），確定嗎？')) send('reset', null, '已歸零，可以重新彩排');
+      if (confirm('點擊數歸零、關閉集氣、清除開獎結果、收回所有已公布的線索、清除點名並重新開放下注（投票留言、押注、保密性別、線索答案都保留），確定嗎？')) send('reset', null, '已歸零，可以重新彩排');
     }, 'warn'],
   ]);
   initClueHost(clueBtn);
@@ -2058,6 +2596,7 @@ addEventListener('resize', resize);
 document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
 addEventListener('pagehide', flush);
 setInterval(() => state && renderWall(true), 60000); // 更新「幾分鐘前」
+setInterval(() => state && api && renderBet(), 500);   // 加碼倒數、加碼結束時切回封盤
 // 達標但還沒揭曉時（例如保密人晚一點才設定），定期再試
 setInterval(() => { if (state && state.reached && !state.reveal) maybeTryReveal(); }, 4000);
 
