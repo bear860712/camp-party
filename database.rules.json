@@ -90,29 +90,34 @@
         "verb": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 24" },
         "unit": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12" },
         "per": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 100 && newData.val() % 1 === 0" },
+        "boostOn": { ".validate": "newData.isBoolean()" },
+        "switchOn": { ".validate": "newData.isBoolean()" },
         "$other": { ".validate": false }
       },
       "lock": { ".validate": "newData.isBoolean()" },
       "boost": { ".validate": "newData.isNumber()" },
       "stakes": {
         "$uid": {
-          ".write": "auth != null && auth.uid === $uid && root.child('bet/cfg/on').val() === true && !root.child('reveal').exists() && ((root.child('bet/lock').val() !== true && root.child('game/active').val() !== true) || root.child('bet/boost').val() > now)",
-          ".validate": "newData.hasChildren(['team', 'n', 'pen', 'bw', 'ts'])",
-          "team": { ".validate": "newData.val() === 'BOY' || newData.val() === 'GIRL'" },
-          "n": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5 && newData.val() % 1 === 0" },
+          ".write": "auth != null && auth.uid === $uid && root.child('bet/cfg/on').val() === true && !root.child('reveal').exists() && ((root.child('bet/lock').val() !== true && root.child('game/active').val() !== true && data.child('lk').val() !== true) || root.child('bet/boost').val() > now)",
+          ".validate": "newData.hasChildren(['b', 'g', 'lk', 'pen', 'bw', 'ts']) && newData.child('b').val() + newData.child('g').val() >= 5 && newData.child('b').val() + newData.child('g').val() <= 10",
+          "b": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10 && newData.val() % 1 === 0" },
+          "g": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10 && newData.val() % 1 === 0" },
+          "lk": { ".validate": "newData.isBoolean()" },
           "pen": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 20 && newData.val() % 1 === 0" },
           "bw": { ".validate": "newData.isNumber()" },
           "ts": { ".validate": "newData.val() === now" },
           "$other": { ".validate": false }
         }
       },
-      "calls": {
-        "$uid": {
-          ".write": "auth != null && auth.uid === $uid && !data.exists() && root.child('reveal').exists() && root.child('bet/stakes').child($uid).child('team').val() === root.child('reveal/gender').val()",
-          ".validate": "newData.isString() && newData.val().length <= 128 && root.child('bet/stakes').child(newData.val()).exists() && root.child('bet/stakes').child(newData.val()).child('team').val() !== root.child('reveal/gender').val()"
-        }
-      },
       "$other": { ".validate": false }
+    },
+
+    "media": {
+      "key": {
+        ".read": "root.child('reveal').exists()",
+        ".write": "auth != null && root.child('secret/host_key').exists() && root.child('hostAuth').child(auth.uid).val() === root.child('secret/host_key').val()",
+        ".validate": "newData.isString() && newData.val().length >= 20 && newData.val().length <= 100"
+      }
     },
 
     "secret": {
