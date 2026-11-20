@@ -539,6 +539,8 @@
   .cs-score .b { color: var(--boy); }
   .cs-score .g { color: var(--girl); }
 
+  .toolbar button.on { background: var(--amber); color: #2a1c10; border-color: var(--amber); font-weight: 700; }
+
   /* ── 開獎影片 ── */
   .video-box { z-index: 65; background: #000; padding: 0; }
   .video-box video { width: 100%; height: 100%; object-fit: contain; background: #000; }
@@ -1000,7 +1002,7 @@ function toast(msg) {
  *   clues    { <key>: { side, note, at } }  // 已公布的孕期線索（主持人寫）
  *   bet      { cfg: { on, verb, unit, per, boostOn, switchOn }, lock, boost,  // 押注（主持人寫設定）
  *              stakes: { <uid>: { b, g, lk, pen, bw, ts } } }  // b/g = 押男/女的杯數；lk = 已鎖定；pen = 換邊罰的次數
- *   media    { key }                        // 開獎影片的解密鑰匙，開獎後才讀得到
+ *   media    { key, on, has_key }           // key：影片鑰匙，開獎後才讀得到；on：主持人的影片開關；has_key：是否已設定鑰匙
  *   secret   { host_key, gender, clues }    // 誰都讀不到（clues 只有主持人讀得到）
  *   hostAuth { <uid>: 主持人密碼 }           // 規則拿來比對 secret/host_key
  * ============================================================ */
@@ -1008,7 +1010,7 @@ function createFirebaseApi() {
   firebase.initializeApp(FIREBASE_CONFIG);
   const db = firebase.database();
   const SV = firebase.database.ServerValue;
-  const raw = { game: null, reveal: null, votes: {}, clicks: {}, presence: {}, clues: {}, bet: null, betDenied: false };
+  const raw = { game: null, reveal: null, votes: {}, clicks: {}, presence: {}, clues: {}, bet: null, betDenied: false, videoOn: false, videoHasKey: false };
   let me = null;
   let offset = 0;
   let name = store.get('tsmc_nick', '');
@@ -1057,6 +1059,9 @@ function createFirebaseApi() {
       // 規則還沒更新時讀不到 bet：只停用押注，不影響其他功能
       db.ref('bet').on('value', (s) => { raw.bet = s.val() || {}; raw.betDenied = false; emit(); },
         (err) => { console.warn('bet:', err); raw.bet = null; raw.betDenied = true; emit(); });
+      // 影片開關：規則沒更新時讀不到，視為關閉
+      db.ref('media/on').on('value', (s) => { raw.videoOn = s.val() === true; emit(); }, () => { raw.videoOn = false; emit(); });
+      db.ref('media/has_key').on('value', (s) => { raw.videoHasKey = s.val() === true; emit(); }, () => { raw.videoHasKey = false; emit(); });
 
       // 逐筆監聽 clicks，才知道「誰剛剛加了幾下」
       const clicks = db.ref('clicks');
@@ -1145,7 +1150,8 @@ function createFirebaseApi() {
         case 'target': return r.child('game/target').set(arg);
         case 'secret_gender': return r.child('secret/gender').set(arg);
         case 'clear_votes': return r.update(betOk ? { votes: null, 'bet/stakes': null } : { votes: null });
-        case 'video_key': return r.child('media/key').set(arg);
+        case 'video_key': return r.update({ 'media/key': arg, 'media/has_key': true });
+        case 'video_on': return r.child('media/on').set(arg);
         case 'clue_answers': return r.child('secret/clues').set(arg);
         case 'clue_show': return r.child('clues/' + arg.key).set({ ...arg.value, at: SV.TIMESTAMP });
         case 'clue_hide': return r.child('clues/' + arg).remove();
@@ -1180,6 +1186,7 @@ function createMockApi(gender) {
     reveal: null, votes: {}, clicks: {}, presence: { [me]: { name: store.get('tsmc_nick', '') } }, clues: {},
     bet: { cfg: { on: false, verb: BET_PRESETS[0].verb, unit: BET_PRESETS[0].unit, per: BET_PRESETS[0].per, boostOn: false, switchOn: false }, lock: false, boost: 0, stakes: {} },
     betDenied: false,
+    videoOn: false, videoHasKey: true,   // 預覽模式用假影片，視為已設定鑰匙
   };
   // 假親友的押注：[押男, 押女, 已鎖定]
   const fakeStakes = { f1: [5, 0, true], f2: [1, 4, true], f3: [3, 2, false], f4: [0, 5, true], f5: [2, 3, false] };
@@ -1246,6 +1253,7 @@ function createMockApi(gender) {
       else if (op === 'bet_cfg') raw.bet.cfg = { ...arg };
       else if (op === 'bet_lock') raw.bet.lock = arg;
       else if (op === 'video_key') { /* 預覽模式用假影片，不需要鑰匙 */ }
+      else if (op === 'video_on') raw.videoOn = arg;
       else if (op === 'bet_boost') {
         raw.bet.boost = Date.now() + BET_BOOST_MS;
         // 模擬一位親友在加碼時間重新分配（換邊）
@@ -1331,6 +1339,7 @@ function derive(r) {
     names,
     clues: normClues(r.clues),
     bet: deriveBet(r.bet, r.betDenied, me),
+    video: { on: r.videoOn === true, hasKey: r.videoHasKey === true },
   };
 }
 
@@ -2012,6 +2021,7 @@ function render() {
     renderWall();
     renderVoteArea();
     renderBet();
+    updateVideoBtn();
   }
 }
 
@@ -2286,7 +2296,7 @@ function startReveal(rv) {
   revealStarted = true;
   pending = 0;
   const t0 = rv.at + REVEAL_LEAD_MS;   // 「3」出現的伺服器時間
-  const cardAt = t0 + 3000;            // 倒數結束：開始播影片（沒有影片就直接出卡片）
+  const cardAt = t0 + 3000;            // 倒數結束：影片開關打開就播影片，否則直接出卡片
   const now = api.serverNow();
   const finish = (late) => {
     els.countdown.classList.remove('show');
@@ -2294,9 +2304,12 @@ function startReveal(rv) {
     fireworks(rv.gender, late ? 3000 : 7000);
     if (!late) vibrate([120, 60, 120, 60, 400]);
   };
-  videoReady = prepareVideo();         // 讀鑰匙、解密，和倒數同時進行
-  if (now >= cardAt + VIDEO_LATE_MS) { finish(true); return; }
-  if (now >= cardAt) { playRevealVideo(cardAt, finish); return; }
+  const useVideo = !!(state && state.video.on);
+  videoReady = useVideo ? prepareVideo() : null;   // 讀鑰匙、解密，和倒數同時進行
+  const atCard = () => (useVideo ? playRevealVideo(cardAt, finish) : finish(false));
+  if (useVideo && now >= cardAt + VIDEO_LATE_MS) { finish(true); return; }
+  if (!useVideo && now >= cardAt) { finish(now >= cardAt + LATE_JOIN_MS); return; }
+  if (now >= cardAt) { atCard(); return; }
 
   els.cdNum.textContent = '';
   els.countdown.classList.add('show');
@@ -2311,7 +2324,7 @@ function startReveal(rv) {
       vibrate(80);
     });
   });
-  later(cardAt - now, () => playRevealVideo(cardAt, finish));
+  later(cardAt - now, atCard);
 }
 
 function cancelReveal() {
@@ -2802,6 +2815,24 @@ async function setVideoKey() {
   api.host('video_key', k).then(() => toast('🎬 鑰匙正確，已設定！開獎時會自動播放影片')).catch(hostError);
 }
 
+/* ---------- 主持人：影片開關（預設關閉，開獎時才看這個開關） ---------- */
+let videoBtn = null;
+
+function updateVideoBtn() {
+  if (!videoBtn || !state) return;
+  videoBtn.textContent = state.video.on ? '🎬 影片：開' : '🎬 影片：關';
+  videoBtn.classList.toggle('on', state.video.on);
+}
+
+function toggleVideo() {
+  if (!state) return;
+  const on = !state.video.on;
+  if (on && !state.video.hasKey) { toast('還沒設定影片鑰匙，請先按「🎬 影片鑰匙」'); return; }
+  api.host('video_on', on)
+    .then(() => toast(on ? '🎬 影片已開啟：倒數完會先播影片' : '影片已關閉：倒數完直接出卡片'))
+    .catch(hostError);
+}
+
 function startBoost() {
   const b = state && state.bet;
   if (!b || !b.on) { toast('押注功能還沒開啟（按 🍻 押注）'); return; }
@@ -2813,12 +2844,13 @@ function startBoost() {
 
 function initPreviewBar() {
   const c = api.control;
-  const [clueBtn] = makeToolbar(`🧪 預覽模式 · ${PREVIEW === 'BOY' ? '男孩' : '女孩'}`, '不會連到 Firebase', [
+  const tbBtns = makeToolbar(`🧪 預覽模式 · ${PREVIEW === 'BOY' ? '男孩' : '女孩'}`, '不會連到 Firebase', [
     ['🔍 公布下一條', revealNextClue],
     ['↩ 收回', hideLastClue],
     ['📝 答案', openClueAdmin],
     ['🍻 押注', openBetAdmin],
     ['⏱️ 加碼 30 秒', startBoost],
+    ['🎬 影片：關', toggleVideo],
     ['① 開啟集氣', () => { c.activate(); toast('主持人已開啟集氣！'); }],
     ['暫停', () => c.deactivate()],
     ['+50 模擬親友', () => c.add(50)],
@@ -2826,7 +2858,9 @@ function initPreviewBar() {
     ['模擬人潮：開', (b) => { b.textContent = '模擬人潮：' + (c.toggleCrowd() ? '開' : '關'); }],
     ['重來', () => { store.set('tsmc_voted_team', ''); location.reload(); }, 'warn'],
   ]);
-  initClueHost(clueBtn);
+  videoBtn = tbBtns.find((b) => b.textContent.startsWith('🎬 影片：')) || null;
+  updateVideoBtn();
+  initClueHost(tbBtns[0]);
   initWallReset();
 }
 
@@ -2836,13 +2870,14 @@ function initHostBar() {
   const send = async (op, arg, okMsg) => {
     try { await api.host(op, arg); toast(okMsg); } catch (err) { hostError(err); }
   };
-  const [clueBtn] = makeToolbar('🎤 主持人遙控', '只有你看得到這列', [
+  const tbBtns = makeToolbar('🎤 主持人遙控', '只有你看得到這列', [
     ['🔍 公布下一條', revealNextClue],
     ['↩ 收回線索', hideLastClue],
     ['📝 線索答案', openClueAdmin],
     ['🍻 押注', openBetAdmin],
     ['⏱️ 加碼 30 秒', startBoost],
-    ['🎬 影片鑰匙', setVideoKey],
+    ['🎬 影片：關', toggleVideo],
+    ['🔑 影片鑰匙', setVideoKey],
     ['▶ 開啟集氣', () => send('activate', null, '集氣開始！')],
     ['⏸ 暫停', () => send('deactivate', null, '已暫停集氣')],
     ['🎯 目標', () => {
@@ -2854,7 +2889,9 @@ function initHostBar() {
       if (confirm('點擊數歸零、關閉集氣、清除開獎結果、收回所有已公布的線索、清除點名並重新開放下注（投票留言、押注、保密性別、線索答案都保留），確定嗎？')) send('reset', null, '已歸零，可以重新彩排');
     }, 'warn'],
   ]);
-  initClueHost(clueBtn);
+  videoBtn = tbBtns.find((b) => b.textContent.startsWith('🎬 影片：')) || null;
+  updateVideoBtn();
+  initClueHost(tbBtns[0]);
   initWallReset();
 }
 
