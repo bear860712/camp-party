@@ -40,11 +40,11 @@
       ".read": true,
       ".write": "auth != null && root.child('secret/host_key').exists() && root.child('hostAuth').child(auth.uid).val() === root.child('secret/host_key').val()",
       "$uid": {
-        ".write": "auth != null && auth.uid === $uid && !root.child('reveal').exists()",
-        ".validate": "newData.hasChildren(['nickname', 'team', 'wish', 'ts'])",
+        ".write": "auth != null && auth.uid === $uid && !root.child('reveal').exists() && (!data.exists() || newData.child('nickname').val() === data.child('nickname').val())",
+        ".validate": "newData.hasChildren(['nickname', 'wish', 'ts'])",
         "nickname": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40" },
         "team": { ".validate": "newData.val() === 'BOY' || newData.val() === 'GIRL'" },
-        "wish": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 160" },
+        "wish": { ".validate": "newData.isString() && newData.val().length <= 160" },
         "ts": { ".validate": "newData.val() === now" },
         "$other": { ".validate": false }
       }

@@ -255,7 +255,7 @@
     100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), -260%) scale(.9); }
   }
 
-  /* ── 投票 ── */
+  /* ── 表單 ── */
   .field { margin-bottom: 14px; }
   .field label.lbl { display: block; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
   .input {
@@ -267,25 +267,6 @@
   textarea.input { resize: none; min-height: 76px; }
   .counter { text-align: right; font-size: 12px; color: var(--muted); margin-top: 4px; }
 
-  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .team-opt { position: relative; min-width: 0; }
-  .team-opt input { position: absolute; opacity: 0; pointer-events: none; }
-  .team-opt label {
-    display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
-    padding: 14px 8px 12px; border-radius: 16px; cursor: pointer;
-    background: rgba(0, 0, 0, .2); border: 2px solid rgba(255, 255, 255, .12);
-    transition: border-color .15s, background .15s, transform .15s;
-  }
-  .team-opt svg { width: 64px; height: 52px; }
-  .team-opt .t1 { font-weight: 700; font-size: 15px; }
-  .team-opt .t2 { font-size: 13px; color: var(--muted); }
-  .team-opt.boy svg { color: var(--boy-deep); }
-  .team-opt.girl svg { color: var(--girl-deep); }
-  .team-opt.boy input:checked + label { border-color: var(--boy); background: rgba(95, 176, 255, .16); box-shadow: 0 0 20px rgba(95, 176, 255, .3); }
-  .team-opt.girl input:checked + label { border-color: var(--girl); background: rgba(255, 143, 196, .16); box-shadow: 0 0 20px rgba(255, 143, 196, .3); }
-  .team-opt input:focus-visible + label { outline: 3px solid var(--amber); outline-offset: 2px; }
-  .team-opt input:checked + label { transform: translateY(-2px); }
-
   .btn {
     width: 100%; min-height: 50px; border: 0; border-radius: 14px;
     font-weight: 700; font-size: 16px;
@@ -294,9 +275,22 @@
   .btn:disabled { opacity: .55; cursor: default; }
   .btn.ghost { background: rgba(255, 255, 255, .08); color: var(--cream); border: 1px solid rgba(255, 255, 255, .18); }
 
-  .voted { text-align: center; padding: 6px 0; }
-  .voted .big { font-family: var(--font-display); font-size: 20px; margin: 6px 0; }
-  .voted p { margin: 0; color: var(--muted); font-size: 14px; }
+  /* ── 加入步驟 ── */
+  .join-card { margin: 16px 0; padding: 20px 18px; }
+  .join-steps { display: flex; gap: 6px; list-style: none; margin: 0 0 16px; padding: 0; counter-reset: s; }
+  .join-steps li { flex: 1; text-align: center; font-size: 13px; color: var(--muted); padding-top: 8px; border-top: 4px solid rgba(255, 255, 255, .12); counter-increment: s; }
+  .join-steps li::before { content: counter(s) '. '; }
+  .join-steps li.on { color: var(--amber); border-color: var(--amber); font-weight: 700; }
+  .join-steps li.done { color: var(--cream); border-color: rgba(255, 193, 99, .5); }
+  .join-title { font-family: var(--font-display); font-size: 21px; line-height: 1.4; margin: 0 0 14px; white-space: pre-line; }
+  .join-hint { font-size: 13px; color: var(--muted); margin: 6px 0 14px; }
+  .join-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; margin-top: 10px; }
+  .link-btn { display: block; margin: 12px auto 0; background: none; border: 0; color: var(--muted); font-size: 14px; text-decoration: underline; }
+  body.joining:not(.is-host) .layout { display: none; }
+  .my-wish { margin-bottom: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 193, 99, .08); border: 1px dashed rgba(255, 193, 99, .4); font-size: 14px; }
+  .my-wish p { margin: 4px 0 0; }
+  .my-wish .row { display: flex; gap: 8px; margin-top: 8px; }
+  .my-wish .row .btn { min-height: 40px; font-size: 14px; }
 
   /* ── 票數比例 ── */
   .tally-legend { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; gap: 8px; }
@@ -503,6 +497,14 @@
   .alloc { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
   .alloc .chip-btn { line-height: 1.3; padding: 6px 4px; }
   .alloc .chip-btn small { display: block; font-size: 12px; font-weight: 400; opacity: .8; }
+  .stepper { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 8px 10px; border-radius: 12px; background: rgba(255, 255, 255, .05); }
+  .stepper .lbl { flex: 1; font-weight: 700; font-size: 16px; }
+  .stepper.b .lbl { color: #8fc8ff; }
+  .stepper.g .lbl { color: #ffadd2; }
+  .stepper .chip-btn { width: 44px; height: 44px; padding: 0; font-size: 22px; line-height: 1; }
+  .stepper .n { min-width: 2.2em; text-align: center; font-size: 22px; font-weight: 800; }
+  .bet-left { display: block; margin-top: 8px; text-align: center; font-size: 14px; color: var(--muted); }
+  .bet-left.done { color: var(--amber); font-weight: 700; }
   .bet-lock { width: 100%; margin-top: 10px; min-height: 46px; border-radius: 12px; border: 0; font-weight: 700; font-size: 15px; background: var(--cream); color: #2a1c10; }
   .bet-lock:disabled { opacity: .5; }
   .split { display: inline-flex; gap: 6px; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -629,6 +631,13 @@
     .stage { margin: 8px 0 0; border-radius: 24px 24px 0 0; }
   }
 
+  /* ── 手機：平常線索、押注在上，集氣開始後營火移到最上面 ── */
+  @media (max-width: 959px) {
+    .layout { display: flex; flex-direction: column; }
+    .col-fire { order: 1; }
+    body.fire-on .col-fire { order: -1; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .bulb, .flick, .meter-fill::after, .ignite.active { animation: none; }
   }
@@ -678,6 +687,30 @@
       想先試玩？在網址後面加上 <code>?preview=boy</code> 或 <code>?preview=girl</code>。
     </div>
   </header>
+
+  <section class="card join-card" id="joinCard" aria-labelledby="joinTitle" hidden>
+    <ol class="join-steps" id="joinSteps">
+      <li data-s="1">暱稱</li>
+      <li data-s="2">祝福</li>
+      <li data-s="3">押注</li>
+    </ol>
+    <form id="joinNick" novalidate>
+      <h2 class="join-title" id="joinTitle">歡迎來到營火邊 ⛺<br>大家要怎麼稱呼你？</h2>
+      <input class="input" id="nick" name="nickname" maxlength="20" autocomplete="nickname" placeholder="例如：愛買零股的阿姨" required>
+      <p class="join-hint">暱稱送出後就不能改了</p>
+      <button class="btn" type="submit">下一步 ➜</button>
+    </form>
+    <form id="joinWish" novalidate hidden>
+      <h2 class="join-title" id="joinHi"></h2>
+      <textarea class="input" id="wish" name="wish" maxlength="80" placeholder="例如：長期持有，一路長紅！"></textarea>
+      <div class="counter"><span id="wishCount">0</span> / 80</div>
+      <div class="join-actions">
+        <button class="btn ghost" type="button" id="joinSkip">跳過</button>
+        <button class="btn" type="submit" id="joinSend">丟進營火 🔥</button>
+      </div>
+      <button class="link-btn" type="button" id="joinBack">← 改暱稱</button>
+    </form>
+  </section>
 
   <div class="layout">
     <div class="col-fire">
@@ -758,43 +791,6 @@
         <div class="clue-foot" id="clueFoot" aria-live="polite"></div>
       </section>
 
-      <section class="section card" aria-labelledby="voteTitle">
-        <h2 class="section-title" id="voteTitle">🏕️ 選邊站：你猜是？</h2>
-        <form id="voteForm" novalidate>
-          <div class="field">
-            <label class="lbl" for="nick">你的暱稱</label>
-            <input class="input" id="nick" name="nickname" maxlength="20" autocomplete="nickname" placeholder="例如：愛買零股的阿姨" required>
-          </div>
-          <div class="field">
-            <span class="lbl" style="display:block;font-size:14px;color:var(--muted);margin-bottom:6px">選擇你的帳篷</span>
-            <div class="teams" role="radiogroup" aria-label="選擇陣營">
-              <div class="team-opt boy">
-                <input type="radio" name="team" id="teamBoy" value="BOY">
-                <label for="teamBoy">
-                  <svg><use href="#tent"/></svg>
-                  <span class="t1">Team Boy 藍色帳篷</span>
-                  <span class="t2">漲停男寶 📈</span>
-                </label>
-              </div>
-              <div class="team-opt girl">
-                <input type="radio" name="team" id="teamGirl" value="GIRL">
-                <label for="teamGirl">
-                  <svg><use href="#tent"/></svg>
-                  <span class="t1">Team Girl 粉色帳篷</span>
-                  <span class="t2">績優女寶 💎</span>
-                </label>
-              </div>
-            </div>
-          </div>
-          <div class="field">
-            <label class="lbl" for="wish">給寶寶的一句祝福</label>
-            <textarea class="input" id="wish" name="wish" maxlength="80" placeholder="例如：長期持有，一路長紅！" required></textarea>
-            <div class="counter"><span id="wishCount">0</span> / 80</div>
-          </div>
-          <button class="btn" id="voteBtn" type="submit">把祝福丟進營火 🔥</button>
-        </form>
-        <div class="voted" id="votedBox" hidden></div>
-      </section>
 
       <section class="section card" id="betCard" aria-labelledby="betTitle" hidden>
         <h2 class="section-title" id="betTitle">🍻 押注看板 <small id="betStatus"></small></h2>
@@ -802,11 +798,11 @@
         <div id="betBody"></div>
       </section>
 
-      <section class="section card" aria-labelledby="tallyTitle">
-        <h2 class="section-title" id="tallyTitle">⛺ 帳篷人氣 <small id="tallyTotal">0 人投票</small></h2>
+      <section class="section card" id="tallyCard" aria-labelledby="tallyTitle" hidden>
+        <h2 class="section-title" id="tallyTitle">⛺ 帳篷人氣 <small id="tallyTotal">0 人押注</small></h2>
         <div class="tally-legend">
-          <span class="b">💙 Team Boy<br><strong id="boyCount">0</strong> 票</span>
-          <span class="g">Team Girl 💗<br><strong id="girlCount">0</strong> 票</span>
+          <span class="b">💙 押男寶<br><strong id="boyCount">0</strong> <span id="boyUnit">杯</span></span>
+          <span class="g">押女寶 💗<br><strong id="girlCount">0</strong> <span id="girlUnit">杯</span></span>
         </div>
         <div class="tally-bar empty" id="tallyBar">
           <div class="b" id="boyBar" style="width:50%">50%</div>
@@ -816,6 +812,7 @@
 
       <section class="section card" aria-labelledby="wallTitle">
         <h2 class="section-title" id="wallTitle">🔥 營火祝福牆 <small id="wallCount"></small><button class="title-btn" id="wallReset" type="button" hidden>🧹 重置</button></h2>
+        <div class="my-wish" id="myWish" hidden></div>
         <div class="wall" id="wall"><div class="empty">還沒有人留言，來當第一位圍著營火的人吧！</div></div>
       </section>
     </div>
@@ -941,7 +938,10 @@ const els = {
   ignite: $('ignite'), igniteMain: $('igniteMain'), igniteSub: $('igniteSub'), mine: $('mine'),
   leaders: $('leaders'), leaderList: $('leaderList'),
   campfire: $('campfire'), flames: $('flames'), glow: $('glow'),
-  voteForm: $('voteForm'), nick: $('nick'), wish: $('wish'), wishCount: $('wishCount'), voteBtn: $('voteBtn'), votedBox: $('votedBox'),
+  joinCard: $('joinCard'), joinSteps: $('joinSteps'), joinNick: $('joinNick'), joinWish: $('joinWish'), joinHi: $('joinHi'),
+  joinSkip: $('joinSkip'), joinSend: $('joinSend'), joinBack: $('joinBack'),
+  nick: $('nick'), wish: $('wish'), wishCount: $('wishCount'), myWish: $('myWish'), tallyCard: $('tallyCard'),
+  boyUnit: $('boyUnit'), girlUnit: $('girlUnit'),
   clueList: $('clueList'), clueFoot: $('clueFoot'), clueProgress: $('clueProgress'),
   boyCount: $('boyCount'), girlCount: $('girlCount'), boyBar: $('boyBar'), girlBar: $('girlBar'), tallyBar: $('tallyBar'), tallyTotal: $('tallyTotal'),
   wall: $('wall'), wallCount: $('wallCount'),
@@ -996,7 +996,7 @@ function toast(msg) {
  * 資料庫結構：
  *   game     { active, force, target, total, round }
  *   clicks   { <uid>: 累計點擊 }
- *   votes    { <uid>: { nickname, team, wish, ts } }
+ *   votes    { <uid>: { nickname, wish, ts } }    // 加入時寫入；暱稱不能改，祝福可以改（舊資料可能有 team）
  *   presence { <uid>: { name, at } }        // 斷線自動移除
  *   reveal   { gender, at }                 // 達標後才寫得進去
  *   clues    { <key>: { side, note, at } }  // 已公布的孕期線索（主持人寫）
@@ -1010,7 +1010,7 @@ function createFirebaseApi() {
   firebase.initializeApp(FIREBASE_CONFIG);
   const db = firebase.database();
   const SV = firebase.database.ServerValue;
-  const raw = { game: null, reveal: null, votes: {}, clicks: {}, presence: {}, clues: {}, bet: null, betDenied: false, videoOn: false, videoHasKey: false };
+  const raw = { game: null, reveal: null, votes: {}, votesLoaded: false, clicks: {}, presence: {}, clues: {}, bet: null, betDenied: false, videoOn: false, videoHasKey: false };
   let me = null;
   let offset = 0;
   let name = store.get('tsmc_nick', '');
@@ -1053,7 +1053,7 @@ function createFirebaseApi() {
       });
       db.ref('game').on('value', (s) => { raw.game = s.val() || {}; emit(); }, fail);
       db.ref('reveal').on('value', (s) => { raw.reveal = s.val(); emit(); }, fail);
-      db.ref('votes').on('value', (s) => { raw.votes = s.val() || {}; emit(); }, fail);
+      db.ref('votes').on('value', (s) => { raw.votes = s.val() || {}; raw.votesLoaded = true; emit(); }, fail);
       db.ref('presence').on('value', (s) => { raw.presence = s.val() || {}; emit(); }, fail);
       db.ref('clues').on('value', (s) => { raw.clues = s.val() || {}; emit(); }, fail);
       // 規則還沒更新時讀不到 bet：只停用押注，不影響其他功能
@@ -1183,7 +1183,7 @@ function createMockApi(gender) {
   ];
   const raw = {
     game: { active: false, force: false, target: clampInt(params.get('target'), 100, 5, 100000), total: 0, round: 'preview' },
-    reveal: null, votes: {}, clicks: {}, presence: { [me]: { name: store.get('tsmc_nick', '') } }, clues: {},
+    reveal: null, votes: {}, votesLoaded: true, clicks: {}, presence: { [me]: { name: store.get('tsmc_nick', '') } }, clues: {},
     bet: { cfg: { on: false, verb: BET_PRESETS[0].verb, unit: BET_PRESETS[0].unit, per: BET_PRESETS[0].per, boostOn: false, switchOn: false }, lock: false, boost: 0, stakes: {} },
     betDenied: false,
     videoOn: false, videoHasKey: true,   // 預覽模式用假影片，視為已設定鑰匙
@@ -1227,7 +1227,8 @@ function createMockApi(gender) {
     async addClicks(n) { if (!add(me, n)) throw new Error('PERMISSION_DENIED'); },
     async vote(v) {
       await sleep(150);
-      if (raw.reveal) throw new Error('PERMISSION_DENIED');
+      const old = raw.votes[me];
+      if (raw.reveal || (old && old.nickname !== v.nickname)) throw new Error('PERMISSION_DENIED');
       raw.votes[me] = { ...v, ts: Date.now() };
       emit();
     },
@@ -1306,10 +1307,9 @@ function derive(r) {
   const votes = [];
   for (const [id, v] of Object.entries(r.votes || {})) {
     if (!v || typeof v !== 'object') continue;
-    const team = normGender(v.team);
     const name = cutText(v.nickname, 20);
-    if (!team || !name) continue;
-    votes.push({ id, name, team, wish: cutText(v.wish, 80), ts: Number(v.ts) || 0 });
+    if (!name) continue;
+    votes.push({ id, name, wish: cutText(v.wish, 80), ts: Number(v.ts) || 0 });
   }
   const names = {};
   for (const [id, p] of Object.entries(r.presence || {})) {
@@ -1330,7 +1330,8 @@ function derive(r) {
     current_clicks: total,
     reached: total >= target || g.force === true,
     reveal: gender ? { gender, at: Number(r.reveal.at) || 0 } : null,
-    votes: { boy: votes.filter((v) => v.team === 'BOY').length, girl: votes.filter((v) => v.team === 'GIRL').length },
+    voters: votes.length,
+    votesLoaded: r.votesLoaded === true,
     wishes: votes.filter((v) => v.wish).sort((a, b) => b.ts - a.ts).slice(0, 60),
     myVote: votes.find((v) => v.id === me) || null,
     myConfirmed: (me && r.clicks && r.clicks[me]) || 0,
@@ -1436,7 +1437,7 @@ function renderMeter() {
   const p = phase();
   document.body.classList.toggle('rush', p === 'active' && ratio >= 0.9);
   let note = ' ';
-  if (p === 'waiting') note = '集氣尚未開始，先去投票、留下祝福吧！';
+  if (p === 'waiting') note = '集氣尚未開始，先看線索、押注吧！';
   else if (p === 'active') note = pct >= 90 ? '🚀 快漲停了！大家再加把勁！' : pct >= 50 ? '🔥 營火越燒越旺，繼續狂點！' : '每一下都在幫營火加柴 🪵';
   else if (p === 'awaiting') note = '🎯 已達標！等保密人揭曉中…';
   else if (p === 'revealed') note = '🎉 漲停開獎！';
@@ -1454,7 +1455,7 @@ function renderButton() {
   };
   if (p === 'unconfigured') set('尚未設定後端', '可先用 ?preview=boy 預覽', false);
   else if (p === 'loading') set('連線營地中…', '', false);
-  else if (p === 'waiting') set('⏳ 等待露營現場主持人開啟集氣', '親友可先投票留言 ⛺', false);
+  else if (p === 'waiting') set('⏳ 等待主持人開啟集氣', '開始後所有人一起狂點 🔥', false);
   else if (p === 'active') set('🔥 狂點幫小台積電股票集氣！', '點越快，營火越旺', true);
   else if (p === 'awaiting') set('🎯 集氣達標！', '等待保密人揭曉…', false);
   else set('🎉 已揭曉！', '點這張卡片可再看一次揭曉', false);
@@ -1487,15 +1488,27 @@ function renderLeaders() {
   }));
 }
 
+/** 帳篷人氣 = 全場押男、押女的杯數 */
+function cupTotals() {
+  const stakes = Object.values(state.bet.stakes);
+  return {
+    boy: stakes.reduce((n, s) => n + s.b, 0) * state.bet.per,
+    girl: stakes.reduce((n, s) => n + s.g, 0) * state.bet.per,
+    people: stakes.length,
+  };
+}
+
 function renderTally() {
-  const boy = state.votes.boy;
-  const girl = state.votes.girl;
+  els.tallyCard.hidden = !state.bet.on;
+  if (!state.bet.on) return;
+  const { boy, girl, people } = cupTotals();
   const total = boy + girl;
   const bp = total ? Math.round((boy / total) * 100) : 50;
   const gp = 100 - bp;
   els.boyCount.textContent = fmt(boy);
   els.girlCount.textContent = fmt(girl);
-  els.tallyTotal.textContent = `${fmt(total)} 人投票`;
+  els.boyUnit.textContent = els.girlUnit.textContent = state.bet.unit;
+  els.tallyTotal.textContent = `${fmt(people)} 人押注`;
   els.boyBar.style.width = bp + '%';
   els.girlBar.style.width = gp + '%';
   els.boyBar.textContent = bp >= 12 ? bp + '%' : '';
@@ -1505,7 +1518,11 @@ function renderTally() {
 
 function renderWall(force = false) {
   const wishes = state.wishes;
-  const sig = wishes.map((w) => w.id + w.ts).join('|');
+  const sideOf = (id) => {
+    const st = state.bet.on && state.bet.stakes[id];
+    return st && st.b !== st.g ? (st.b > st.g ? 'BOY' : 'GIRL') : null;   // 依押注多的那邊上色
+  };
+  const sig = wishes.map((w) => w.id + w.ts + sideOf(w.id)).join('|');
   if (!force && sig === lastWallSig) return;
   const isFirst = lastWallSig === '';
   const newestChanged = !isFirst && wishes[0] && !lastWallSig.startsWith(wishes[0].id + wishes[0].ts);
@@ -1522,6 +1539,7 @@ function renderWall(force = false) {
   }
   wishes.forEach((w, i) => {
     const card = document.createElement('article');
+    w.team = sideOf(w.id);
     card.className = 'wish ' + (w.team || '');
     if (!(newestChanged && i === 0) || force) card.style.animation = 'none';
 
@@ -1534,7 +1552,7 @@ function renderWall(force = false) {
     if (w.team) {
       const tag = document.createElement('span');
       tag.className = 'tag';
-      tag.textContent = w.team === 'BOY' ? 'Team Boy' : 'Team Girl';
+      tag.textContent = w.team === 'BOY' ? '押男寶' : '押女寶';
       head.append(tag);
     }
     const time = document.createElement('span');
@@ -1549,29 +1567,147 @@ function renderWall(force = false) {
   });
 }
 
-function renderVoteArea() {
-  // 伺服器上有自己的票就以伺服器為準；還沒登入完成前先看本機記錄
-  const voted = state.myVote ? state.myVote.team : (api && api.me ? '' : store.get('tsmc_voted_team'));
-  const closed = phase() === 'revealed' || phase() === 'awaiting';
-  if (!voted && !closed) {
-    els.voteForm.hidden = false;
-    els.votedBox.hidden = true;
+/* ---------- 加入步驟：1 暱稱 → 2 祝福（可跳過）→ 3 押注 ---------- */
+let joinStep = 1;
+let wishEditing = false;
+
+/** 還沒加入（伺服器上沒有自己的暱稱）就顯示加入步驟；已開獎不再加入 */
+function needJoin() {
+  return !!(api && api.me && state && state.votesLoaded && !state.myVote && !state.reveal);
+}
+
+function renderJoin() {
+  const joining = needJoin();
+  const was = document.body.classList.contains('joining');
+  document.body.classList.toggle('joining', joining);
+  els.joinCard.hidden = !joining;
+  if (!joining) {
+    if (was && state.myVote) {
+      joinStep = 1;
+      // 加入完成：到押注（沒開押注就到線索）
+      setTimeout(() => (state.bet.on ? els.betCard : els.clueList).scrollIntoView({ behavior: REDUCED_MOTION ? 'auto' : 'smooth', block: 'start' }), 300);
+    }
     return;
   }
-  els.voteForm.hidden = true;
-  els.votedBox.hidden = false;
-  els.votedBox.replaceChildren();
-  const big = document.createElement('div');
-  big.className = 'big';
-  const p = document.createElement('p');
-  if (voted) {
-    big.textContent = voted === 'BOY' ? '💙 你已加入 Team Boy 藍色帳篷' : '💗 你已加入 Team Girl 粉色帳篷';
-    p.textContent = closed ? '投票已截止，看看你有沒有猜中！' : '謝謝你的祝福！等集氣開始就一起狂點吧 🔥';
-  } else {
-    big.textContent = '投票已截止';
-    p.textContent = '性別已揭曉，謝謝大家圍著營火參與 ⛺';
+  const steps = [...els.joinSteps.children];
+  steps[2].hidden = !state.bet.on;
+  steps.forEach((li, i) => {
+    li.classList.toggle('on', i + 1 === joinStep);
+    li.classList.toggle('done', i + 1 < joinStep);
+  });
+  els.joinNick.hidden = joinStep !== 1;
+  els.joinWish.hidden = joinStep !== 2;
+  if (joinStep === 2) els.joinHi.textContent = `嗨 ${cutText(els.nick.value, 20)}！\n給寶寶一句祝福吧（可以跳過）`;
+}
+
+els.nick.value = store.get('tsmc_nick', '');
+els.wish.addEventListener('input', () => { els.wishCount.textContent = Array.from(els.wish.value).length; });
+
+els.joinNick.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (!cutText(els.nick.value, 20)) { toast('請輸入暱稱'); els.nick.focus(); return; }
+  joinStep = 2;
+  renderJoin();
+  els.wish.focus();
+});
+els.joinBack.addEventListener('click', () => { joinStep = 1; renderJoin(); els.nick.focus(); });
+
+async function sendJoin(wish) {
+  const nickname = cutText(els.nick.value, 20);
+  if (!api || !nickname) return;
+  els.joinSend.disabled = els.joinSkip.disabled = true;
+  try {
+    await withTimeout(api.vote({ nickname, wish }), 10000);
+    store.set('tsmc_nick', nickname);
+    api.setName(nickname);
+    toast(wish ? '🔥 祝福丟進營火了！' : `⛺ 歡迎 ${nickname}！`);
+    spawnSparks(30);
+  } catch (err) {
+    toast(isDenied(err) ? '已開獎，不能再加入了' : err.message === 'timeout' ? '網路不穩，連上後會自動送出' : '送出失敗，請稍後再試');
+  } finally {
+    els.joinSend.disabled = els.joinSkip.disabled = false;
   }
-  els.votedBox.append(big, p);
+}
+els.joinWish.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const wish = cutText(els.wish.value, 80);
+  if (!wish) { toast('還沒寫祝福，不想寫可以按「跳過」'); els.wish.focus(); return; }
+  sendJoin(wish);
+});
+els.joinSkip.addEventListener('click', () => sendJoin(''));
+
+/** 祝福牆上方：自己的祝福，隨時可以寫或改（暱稱不能改） */
+function renderMyWish() {
+  const v = state.myVote;
+  const box = els.myWish;
+  const show = !!v && !state.reveal;
+  box.hidden = !show;
+  if (!show) { wishEditing = false; return; }
+  if (wishEditing) return;   // 編輯中不重畫
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn ghost';
+  btn.textContent = v.wish ? '✏️ 修改我的祝福' : '✏️ 寫一句祝福';
+  btn.addEventListener('click', () => openWishEditor(v));
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.append(btn);
+  const p = document.createElement('p');
+  p.textContent = v.wish ? `我的祝福：${v.wish}` : `${v.name}，你還沒寫祝福`;
+  box.replaceChildren(p, row);
+}
+
+function openWishEditor(v) {
+  wishEditing = true;
+  const ta = document.createElement('textarea');
+  ta.className = 'input';
+  ta.maxLength = 80;
+  ta.value = v.wish;
+  ta.placeholder = '例如：長期持有，一路長紅！';
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.className = 'btn ghost';
+  cancel.textContent = '取消';
+  const save = document.createElement('button');
+  save.type = 'button';
+  save.className = 'btn';
+  save.textContent = '送出 🔥';
+  const done = () => { wishEditing = false; renderMyWish(); };
+  cancel.addEventListener('click', done);
+  save.addEventListener('click', async () => {
+    const wish = cutText(ta.value, 80);
+    if (!wish) { toast('請寫一句祝福'); ta.focus(); return; }
+    save.disabled = true;
+    try {
+      await withTimeout(api.vote({ nickname: v.name, wish }), 10000);
+      toast('🔥 祝福更新了！');
+      done();
+    } catch (err) {
+      toast(isDenied(err) ? '已開獎，不能再改祝福了' : '送出失敗，請稍後再試');
+      save.disabled = false;
+    }
+  });
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.append(cancel, save);
+  els.myWish.replaceChildren(ta, row);
+  ta.focus();
+}
+
+/** 集氣開始：手機上把營火移到最上面並捲過去 */
+let fireWasOn = null;
+function renderFireFocus() {
+  const p = phase();
+  const on = p === 'active' || p === 'awaiting' || p === 'revealed';
+  document.body.classList.toggle('fire-on', on);
+  if (fireWasOn === false && on && p === 'active' && innerWidth < 960) {
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    // 等版面換完順序再捲，避免被瀏覽器的捲動錨定拉回原位
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.querySelector('.col-fire').scrollIntoView({ behavior: 'auto', block: 'start' });
+    }));
+  }
+  if (state) fireWasOn = on;
 }
 
 /* ---------- 孕期線索 ---------- */
@@ -1711,6 +1847,7 @@ const cups = (n) => `${n * state.bet.per} ${state.bet.unit}`;
 let betSig = '';
 let betBusy = false;
 let reallocMode = false;   // 加碼時間按了「換邊」後，暫時打開分配按鈕
+const betDraft = { b: 0, g: 0 };   // 鎖定前的分配只存在本機，鎖定時才一次寫入
 
 /** open 自由下注 → locked 封盤（主持人封盤或開啟集氣）；boost 加碼時間；settle 開獎後 */
 function betPhase() {
@@ -1732,7 +1869,11 @@ function checkBetEvents(prev) {
   }
   for (const [id, s] of Object.entries(b.stakes)) {
     const old = prev.bet.stakes[id];
-    if (id === me || !old) continue;
+    if (id === me) continue;
+    if (!old) {
+      if (s.lk) toast(`🔒 ${nameOf(id)} 鎖定了！`);
+      continue;
+    }
     if (s.pen > old.pen) {
       toast(`😱 ${nameOf(id)} 換邊了！先${b.verb} ${b.per} ${b.unit}`);
       vibrate(60);
@@ -1808,7 +1949,7 @@ function renderBet(force = false) {
   if (ph !== 'boost') reallocMode = false;
   const left = Math.max(0, Math.ceil((b.boostUntil - api.serverNow()) / 1000));
   els.rcBetWrap.hidden = !(state.reveal && Object.keys(b.stakes).length);
-  const sig = JSON.stringify([b, ph, left, !!state.myVote, state.reveal, state.names, betBusy, reallocMode]);
+  const sig = JSON.stringify([b, ph, left, state.reveal, state.names, betBusy, reallocMode]);
   if (!force && sig === betSig) return;
   betSig = sig;
 
@@ -1831,7 +1972,6 @@ function renderBet(force = false) {
 function buildMyBet(ph) {
   const b = state.bet;
   const mine = b.mine;
-  const vote = state.myVote;
   const box = document.createElement('div');
   box.className = 'bet-me';
   const line = document.createElement('div');
@@ -1840,30 +1980,48 @@ function buildMyBet(ph) {
   box.append(line);
   const pen = mine && mine.pen ? `（換邊已罰 ${cups(mine.pen)}）` : '';
 
-  if (!vote) {
-    line.textContent = ph === 'open' ? '先在上面選邊站，就能一起押注 👆' : '🔒 已封盤，這次不能押注了';
-    return box;
-  }
-
-  // 自由下注、還沒鎖定：選分配 → 按鎖定
+  // 自由下注、還沒鎖定：男 −/+、女 −/+ 放完 5 杯 → 按鎖定
   if (ph === 'open' && !(mine && mine.lk)) {
-    const total = mine ? mine.b + mine.g : BET_CUPS;
-    if (mine) line.append('你目前押：', splitEl(mine));
-    else line.textContent = `你有 ${BET_CUPS} ${b.per === 1 ? b.unit : '注'}，要怎麼分配？`;
-    sub.textContent = mine ? '確定了就按鎖定，鎖定後不能改' : '點一個分配方式';
-    const grid = allocGrid(total, mine, (bb) => betAction(() => api.setStake({
-      b: bb, g: total - bb, lk: false, pen: mine ? mine.pen : 0, bw: mine ? mine.bw : 0,
-    })));
+    const unit = b.per === 1 ? b.unit : '注';
+    if (mine && betDraft.b + betDraft.g === 0) { betDraft.b = Math.min(mine.b, BET_CUPS); betDraft.g = Math.min(mine.g, BET_CUPS - betDraft.b); }
+    const used = betDraft.b + betDraft.g;
+    const leftCups = BET_CUPS - used;
+    line.textContent = `你有 ${BET_CUPS} ${unit}，男、女各押幾${unit}？`;
+    sub.textContent = '押錯那邊的要喝，押對的不用。放完 5 ' + unit + '就能鎖定';
+    const stepper = (side, label) => {
+      const row = document.createElement('div');
+      row.className = 'stepper ' + side;
+      const lbl = document.createElement('span');
+      lbl.className = 'lbl';
+      lbl.textContent = label;
+      const n = document.createElement('span');
+      n.className = 'n';
+      n.textContent = betDraft[side];
+      const set = (d) => { betDraft[side] += d; renderBet(true); };
+      row.append(
+        lbl,
+        chip('−', { disabled: betBusy || betDraft[side] <= 0, onClick: () => set(-1) }),
+        n,
+        chip('+', { disabled: betBusy || leftCups <= 0, onClick: () => set(1) }),
+      );
+      return row;
+    };
+    const left = document.createElement('span');
+    left.className = 'bet-left' + (leftCups === 0 ? ' done' : '');
+    left.textContent = leftCups ? `還剩 ${leftCups} ${unit}` : '5 ' + unit + '都放好了 👍';
+    box.append(sub, stepper('b', '💙 男'), stepper('g', '💗 女'), left);
+
     const lockBtn = document.createElement('button');
     lockBtn.type = 'button';
     lockBtn.className = 'bet-lock';
-    lockBtn.textContent = '🔒 鎖定（鎖定後不能改）';
-    lockBtn.disabled = !mine || betBusy;
+    lockBtn.textContent = state.myVote ? '🔒 鎖定（鎖定後不能改）' : '先在最上面填暱稱加入，才能鎖定';
+    lockBtn.disabled = leftCups !== 0 || betBusy || !state.myVote;
     lockBtn.addEventListener('click', () => {
-      if (!confirm(`鎖定「男 ${cups(mine.b)}、女 ${cups(mine.g)}」？\n鎖定後就不能改了。`)) return;
-      betAction(() => api.setStake({ ...mine, lk: true }), '🔒 已鎖定！');
+      const s = { b: betDraft.b, g: betDraft.g };
+      if (!confirm(`鎖定「男 ${cups(s.b)}、女 ${cups(s.g)}」？\n鎖定後就不能改了。`)) return;
+      betAction(() => api.setStake({ ...s, lk: true, pen: mine ? mine.pen : 0, bw: mine ? mine.bw : 0 }), '🔒 已鎖定！');
     });
-    box.append(sub, grid, lockBtn);
+    box.append(lockBtn);
     return box;
   }
 
@@ -2019,7 +2177,9 @@ function render() {
     renderLeaders();
     renderTally();
     renderWall();
-    renderVoteArea();
+    renderJoin();
+    renderMyWish();
+    renderFireFocus();
     renderBet();
     updateVideoBtn();
   }
@@ -2123,50 +2283,6 @@ function setConn(ok) {
   els.conn.classList.toggle('bad', !ok);
   els.conn.textContent = PREVIEW ? `預覽模式（模擬${PREVIEW === 'BOY' ? '男孩' : '女孩'}）` : ok ? '營地即時連線中' : '連線中斷，重新連線中…';
 }
-
-/* ============================================================
- * 投票與祝福
- * ============================================================ */
-els.nick.value = store.get('tsmc_nick', '');
-els.wish.addEventListener('input', () => { els.wishCount.textContent = Array.from(els.wish.value).length; });
-
-const ERRORS = {
-  nickname_required: '請輸入暱稱',
-  team_required: '請選擇一頂帳篷',
-  wish_required: '請寫一句給寶寶的祝福',
-  voting_closed: '已開獎，投票截止囉！',
-};
-
-els.voteForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  if (!api) { toast('尚未設定後端'); return; }
-  const nickname = cutText(els.nick.value, 20);
-  const team = (els.voteForm.querySelector('input[name="team"]:checked') || {}).value;
-  const wish = cutText(els.wish.value, 80);
-  if (!nickname) { toast(ERRORS.nickname_required); els.nick.focus(); return; }
-  if (!team) { toast(ERRORS.team_required); return; }
-  if (!wish) { toast(ERRORS.wish_required); els.wish.focus(); return; }
-
-  els.voteBtn.disabled = true;
-  els.voteBtn.textContent = '送出中…';
-  try {
-    await withTimeout(api.vote({ nickname, team, wish }), 10000);
-    store.set('tsmc_nick', nickname);
-    store.set('tsmc_voted_team', team);
-    api.setName(nickname);
-    toast(team === 'BOY' ? '💙 歡迎加入藍色帳篷！' : '💗 歡迎加入粉色帳篷！');
-    spawnSparks(30);
-    if (state && state.bet.on && betPhase() === 'open') {
-      setTimeout(() => els.betCard.scrollIntoView({ behavior: REDUCED_MOTION ? 'auto' : 'smooth', block: 'start' }), 600);
-    }
-  } catch (err) {
-    toast(isDenied(err) ? ERRORS.voting_closed : err.message === 'timeout' ? '網路不穩，連上後會自動送出' : '送出失敗，請稍後再試');
-  } finally {
-    els.voteBtn.disabled = false;
-    els.voteBtn.textContent = '把祝福丟進營火 🔥';
-    if (state) renderVoteArea();
-  }
-});
 
 /* ============================================================
  * 開獎：達標 → 依伺服器時間同步 3、2、1 → 煙火 → 揭曉卡片
@@ -2345,7 +2461,8 @@ function showRevealCard(gender) {
   els.rcGender.textContent = boy ? '男孩' : '女孩';
   els.rcPun.textContent = boy ? '漲停男寶 正式上市 📈' : '績優女寶 正式上市 💎';
   els.rcTotal.textContent = fmt(state.current_clicks);
-  els.rcRight.textContent = fmt(boy ? state.votes.boy : state.votes.girl);
+  // 押對多數的人（押對那邊的杯數比較多）
+  els.rcRight.textContent = fmt(Object.values(state.bet.stakes).filter((s) => (boy ? s.b > s.g : s.g > s.b)).length);
   els.rcMine.textContent = fmt(state.myConfirmed);
   els.rcDate.textContent = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' }) + ' · 全體親友一起揭曉';
   els.reveal.classList.add('show');
@@ -2571,11 +2688,17 @@ function cleanAnswers(obj) {
  * 公布順序：先連續公布偏男、再連續公布偏女（大逆轉），最後兩條一男一女收尾。
  * 5：5 時就是「男男男男 女女女女 男 女」；比例不同時保持同樣的節奏。
  */
+const CLUE_RHYTHM = 'BBBGBGGGBG';
 function planClueOrder(ans) {
   const boys = CLUES.filter((c) => ans[c.key] && ans[c.key].side === 'BOY');
   const girls = CLUES.filter((c) => ans[c.key] && ans[c.key].side === 'GIRL');
-  if (!boys.length || !girls.length) return [...boys, ...girls];
-  return [...boys.slice(0, -1), ...girls.slice(0, -1), boys[boys.length - 1], girls[girls.length - 1]];
+  // 依固定節奏輪流出男、女（男男男女 男 女女女男女），某邊用完就接著出另一邊
+  const out = [];
+  for (const s of CLUE_RHYTHM) {
+    const q = s === 'B' ? boys : girls;
+    if (q.length) out.push(q.shift());
+  }
+  return [...out, ...boys, ...girls];
 }
 
 function nextClue() {
@@ -2693,13 +2816,12 @@ function initWallReset() {
   const b = $('wallReset');
   b.hidden = false;
   b.addEventListener('click', async () => {
-    const n = state ? state.votes.boy + state.votes.girl : 0;
+    const n = state ? state.voters : 0;
     const betNote = state && state.bet.on ? '押注也會一起清掉。\n' : '';
-    if (!confirm(`清空祝福牆？\n全部 ${n} 則留言和選邊站的票都會刪除，帳篷人氣歸零，大家可以重新投票。\n${betNote}這個動作無法復原。`)) return;
+    if (!confirm(`清空祝福牆？\n${n} 位加入者的暱稱和祝福都會刪除，大家要重新填暱稱加入。\n${betNote}這個動作無法復原。`)) return;
     b.disabled = true;
     try {
       await api.host('clear_votes');
-      store.set('tsmc_voted_team', '');
       toast('🧹 祝福牆已清空');
     } catch (err) { hostError(err); }
     b.disabled = false;
@@ -2856,7 +2978,7 @@ function initPreviewBar() {
     ['+50 模擬親友', () => c.add(50)],
     ['直接灌滿 💥', () => c.fill()],
     ['模擬人潮：開', (b) => { b.textContent = '模擬人潮：' + (c.toggleCrowd() ? '開' : '關'); }],
-    ['重來', () => { store.set('tsmc_voted_team', ''); location.reload(); }, 'warn'],
+    ['重來', () => location.reload(), 'warn'],
   ]);
   videoBtn = tbBtns.find((b) => b.textContent.startsWith('🎬 影片：')) || null;
   updateVideoBtn();
@@ -2935,6 +3057,7 @@ if (!api) {
   els.setupBanner.hidden = false;
   els.conn.textContent = '尚未設定後端';
 } else {
+  if (HOST_KEY || KEEPER_KEY) document.body.classList.add('is-host');   // 主持人不用先走加入步驟也看得到全部
   if (PREVIEW) initPreviewBar();
   else if (KEEPER_KEY) initKeeperBar();
   else if (HOST_KEY) initHostBar();
