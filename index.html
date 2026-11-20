@@ -1184,8 +1184,9 @@ function createFirebaseApi() {
         case 'bet_boost': return r.child('bet/boost').set(Date.now() + offset + BET_BOOST_MS);
         case 'reset': return r.update({
           'game/active': false, 'game/force': false, 'game/total': 0, 'game/round': uid().slice(0, 8),
-          clicks: null, reveal: null, clues: null,
-          ...(betOk ? { 'bet/lock': null, 'bet/boost': null } : {}),
+          // 彩排完全回到起點：大家重新填暱稱、重新押注（押注設定、線索答案、保密性別、影片設定保留）
+          clicks: null, reveal: null, clues: null, votes: null,
+          ...(betOk ? { 'bet/lock': null, 'bet/boost': null, 'bet/stakes': null } : {}),
         });
         default: throw new Error('unknown_op');
       }
@@ -1275,6 +1276,11 @@ function createMockApi(gender) {
     async host(op, arg) {
       await sleep(100);
       if (op === 'clear_votes') { raw.votes = {}; raw.bet.stakes = {}; }
+      else if (op === 'reset') {
+        raw.game = { ...raw.game, active: false, force: false, total: 0 };
+        raw.clicks = {}; raw.reveal = null; raw.clues = {}; raw.votes = {};
+        raw.bet = { ...raw.bet, lock: null, boost: null, stakes: {} };
+      }
       else if (op === 'live') raw.game.live = arg;
       else if (op === 'activate') { raw.game.active = true; if (raw.bet.cfg.on) raw.bet.lock = true; }
       else if (op === 'force_reveal') raw.game.force = true;
@@ -1440,6 +1446,10 @@ function update() {
   checkMilestones();
   checkNewClues();
   checkBetEvents(prev);
+  // 主持人歸零／重置後自己的押注被清掉：本機草稿也歸零
+  if (prev && prev.bet.mine && !state.bet.mine) { betDraft.b = 0; betDraft.g = 0; reallocMode = false; }
+  // 自己的暱稱被清掉：從第 1 步重新加入
+  if (prev && prev.myVote && !state.myVote) { joinStep = 1; wishEditing = false; }
   if (state.reveal && !revealStarted) startReveal(state.reveal);
   else if (!state.reveal && revealStarted) cancelReveal(); // 主持人彩排歸零
   if (state.reached && !state.reveal) maybeTryReveal();
@@ -3112,6 +3122,7 @@ function initPreviewBar() {
     ['+50 模擬親友', () => c.add(50)],
     ['直接灌滿 💥', () => c.fill()],
     ['模擬人潮：開', (b) => { b.textContent = '模擬人潮：' + (c.toggleCrowd() ? '開' : '關'); }],
+    ['彩排歸零', () => api.host('reset').then(() => toast('已歸零，大家可以從填暱稱重新開始')), 'warn'],
     ['重來', () => location.reload(), 'warn'],
   ]);
   videoBtn = tbBtns.find((b) => b.textContent.startsWith('🎬 影片：')) || null;
@@ -3147,7 +3158,7 @@ function initHostBar() {
     }],
     ['強制開獎', () => { if (confirm('確定不等集氣，直接讓所有人揭曉嗎？')) send('force_reveal', null, '開獎！'); }, 'warn'],
     ['彩排歸零', () => {
-      if (confirm('點擊數歸零、關閉集氣、清除開獎結果、收回所有已公布的線索、清除點名並重新開放下注（投票留言、押注、保密性別、線索答案都保留），確定嗎？')) send('reset', null, '已歸零，可以重新彩排');
+      if (confirm('全部回到起點：點擊數歸零、關閉集氣、清除開獎結果、收回已公布的線索，並清掉所有人的暱稱、祝福和押注（大家要重新加入、重新押注）。\n押注設定、保密性別、線索答案、影片設定都保留。確定嗎？')) send('reset', null, '已歸零，大家可以從填暱稱重新開始');
     }, 'warn'],
   ]);
   videoBtn = tbBtns.find((b) => b.textContent.startsWith('🎬 影片：')) || null;
