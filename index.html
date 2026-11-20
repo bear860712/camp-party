@@ -275,6 +275,17 @@
   .btn:disabled { opacity: .55; cursor: default; }
   .btn.ghost { background: rgba(255, 255, 255, .08); color: var(--cream); border: 1px solid rgba(255, 255, 255, .18); }
 
+  /* ── 現場戳氣球模式：取代集氣卡 ── */
+  body.live .fire-card { display: none; }
+  .live-card { text-align: center; padding: 22px 18px; }
+  .live-emoji { font-size: 56px; line-height: 1; }
+  .live-main { font-family: var(--font-display); font-size: 24px; margin-top: 10px; }
+  .live-sub { margin-top: 6px; font-size: 14px; color: var(--muted); }
+  .live-card.ready { border: 2px solid var(--amber); box-shadow: 0 0 36px rgba(255, 193, 99, .45); }
+  .live-card.ready .live-emoji { animation: balloonBob 1.2s ease-in-out infinite; }
+  .live-card.ready .live-main { font-size: 30px; color: var(--amber); }
+  @keyframes balloonBob { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.08); } }
+
   /* ── 加入步驟 ── */
   .join-card { margin: 16px 0; padding: 20px 18px; }
   .join-steps { display: flex; gap: 6px; list-style: none; margin: 0 0 16px; padding: 0; counter-reset: s; }
@@ -493,6 +504,10 @@
   .bet-settle .why { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
   .bet-settle li.ok { background: rgba(91, 227, 138, .08); border-color: rgba(91, 227, 138, .25); }
   .bet-settle li.ok .amt { color: #8ff0b0; }
+  .bet-god { margin-bottom: 14px; padding: 14px; border-radius: 14px; text-align: center; background: linear-gradient(135deg, rgba(255, 209, 102, .28), rgba(255, 160, 60, .14)); border: 2px solid var(--amber); box-shadow: 0 0 24px rgba(255, 193, 99, .35); }
+  .bet-god .god-title { font-family: var(--font-display); font-size: 20px; color: var(--amber); }
+  .bet-god .god-names { font-size: 18px; font-weight: 800; margin: 6px 0; }
+  .bet-god p { margin: 0; font-size: 14px; }
   .bet-note { margin-top: 10px; font-size: 13px; color: var(--muted); text-align: center; white-space: pre-line; }
   .alloc { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
   .alloc .chip-btn { line-height: 1.3; padding: 6px 4px; }
@@ -758,6 +773,12 @@
         </svg>
       </div>
 
+      <section class="card live-card" id="liveCard" aria-live="polite" hidden>
+        <div class="live-emoji" aria-hidden="true">🎈</div>
+        <div class="live-main" id="liveMain"></div>
+        <div class="live-sub" id="liveSub"></div>
+      </section>
+
       <section class="card fire-card" aria-labelledby="fireTitle">
         <h2 class="sr-only" id="fireTitle">全體集氣</h2>
         <div class="meter-head">
@@ -913,6 +934,7 @@ const CLUE_KEYS = new Set(CLUES.map((c) => c.key));
 const BET_CUPS = 5;
 const BET_MAX_TOTAL = 10;
 const BET_BOOST_MS = 30000;
+const GOD_CUPS = 2;   // 股神可以指定別人喝的注數（套用主持人設定的懲罰動作與倍數）
 const BET_PRESETS = [
   { label: '🍺 喝酒（每注 1 杯）', verb: '喝', unit: '杯', per: 1 },
   { label: '💪 伏地挺身（每注 10 下）', verb: '做伏地挺身', unit: '下', per: 10 },
@@ -939,6 +961,7 @@ const els = {
   leaders: $('leaders'), leaderList: $('leaderList'),
   campfire: $('campfire'), flames: $('flames'), glow: $('glow'),
   joinCard: $('joinCard'), joinSteps: $('joinSteps'), joinNick: $('joinNick'), joinWish: $('joinWish'), joinHi: $('joinHi'),
+  liveCard: $('liveCard'), liveMain: $('liveMain'), liveSub: $('liveSub'),
   joinSkip: $('joinSkip'), joinSend: $('joinSend'), joinBack: $('joinBack'),
   nick: $('nick'), wish: $('wish'), wishCount: $('wishCount'), myWish: $('myWish'), tallyCard: $('tallyCard'),
   boyUnit: $('boyUnit'), girlUnit: $('girlUnit'),
@@ -994,7 +1017,7 @@ function toast(msg) {
  *   serverNow()  校正過的伺服器時間，讓所有人同一秒倒數
  *
  * 資料庫結構：
- *   game     { active, force, target, total, round }
+ *   game     { active, force, target, total, round, live }   // live：現場戳氣球模式（不集氣，主持人按公布才開獎）
  *   clicks   { <uid>: 累計點擊 }
  *   votes    { <uid>: { nickname, wish, ts } }    // 加入時寫入；暱稱不能改，祝福可以改（舊資料可能有 team）
  *   presence { <uid>: { name, at } }        // 斷線自動移除
@@ -1147,6 +1170,7 @@ function createFirebaseApi() {
         case 'activate': return r.update(betOn ? { 'game/active': true, 'bet/lock': true } : { 'game/active': true });
         case 'deactivate': return r.child('game/active').set(false);
         case 'force_reveal': return r.child('game/force').set(true);
+        case 'live': return r.child('game/live').set(arg);
         case 'target': return r.child('game/target').set(arg);
         case 'secret_gender': return r.child('secret/gender').set(arg);
         case 'clear_votes': return r.update(betOk ? { votes: null, 'bet/stakes': null } : { votes: null });
@@ -1241,7 +1265,7 @@ function createMockApi(gender) {
     },
     async getVideoKey() { return raw.reveal ? 'preview' : null; },
     async tryReveal() {
-      if (raw.reveal || !(raw.game.total >= raw.game.target || raw.game.force)) return false;
+      if (raw.reveal || !(raw.game.force || (!raw.game.live && raw.game.total >= raw.game.target))) return false;
       await sleep(150);
       raw.reveal = { gender, at: Date.now() };
       emit();
@@ -1251,6 +1275,9 @@ function createMockApi(gender) {
     async host(op, arg) {
       await sleep(100);
       if (op === 'clear_votes') { raw.votes = {}; raw.bet.stakes = {}; }
+      else if (op === 'live') raw.game.live = arg;
+      else if (op === 'activate') { raw.game.active = true; if (raw.bet.cfg.on) raw.bet.lock = true; }
+      else if (op === 'force_reveal') raw.game.force = true;
       else if (op === 'bet_cfg') raw.bet.cfg = { ...arg };
       else if (op === 'bet_lock') raw.bet.lock = arg;
       else if (op === 'video_key') { /* 預覽模式用假影片，不需要鑰匙 */ }
@@ -1328,7 +1355,9 @@ function derive(r) {
     is_active: g.active === true,
     target_clicks: target,
     current_clicks: total,
-    reached: total >= target || g.force === true,
+    live: g.live === true,
+    // 現場模式只有主持人按「公布到手機」（force）才開獎
+    reached: g.force === true || (g.live !== true && total >= target),
     reveal: gender ? { gender, at: Number(r.reveal.at) || 0 } : null,
     voters: votes.length,
     votesLoaded: r.votesLoaded === true,
@@ -1364,6 +1393,7 @@ function deriveBet(b, denied, me) {
     per: clampInt(cfg.per, 1, 1, 100),
     boostOn: cfg.boostOn === true,
     switchOn: cfg.switchOn === true,
+    godOn: cfg.godOn === true,
     lock: src.lock === true,
     boostUntil: Number(src.boost) || 0,
     stakes,
@@ -1694,6 +1724,68 @@ function openWishEditor(v) {
   ta.focus();
 }
 
+/** 現場戳氣球模式：集氣卡換成氣球卡 */
+function renderLive() {
+  const live = state.live;
+  document.body.classList.toggle('live', live);
+  els.liveCard.hidden = !live;
+  if (!live) return;
+  const p = phase();
+  const ready = p === 'active';
+  els.liveCard.classList.toggle('ready', ready);
+  if (p === 'revealed') {
+    els.liveMain.textContent = '🎉 揭曉了！';
+    els.liveSub.textContent = '點這裡可以再看一次卡片和懲罰清單';
+  } else if (p === 'awaiting') {
+    els.liveMain.textContent = '🎉 公布中…';
+    els.liveSub.textContent = '';
+  } else if (ready) {
+    els.liveMain.textContent = '準備戳氣球！';
+    els.liveSub.textContent = state.bet.on ? '押注已封盤，大家抬頭看氣球 👀' : '大家抬頭看氣球 👀';
+  } else {
+    els.liveMain.textContent = '今天現場戳氣球揭曉！';
+    els.liveSub.textContent = '先看線索、押注，要戳氣球時這裡會通知大家';
+  }
+}
+
+els.liveCard.addEventListener('click', () => { if (state && state.reveal) showRevealCard(state.reveal.gender); });
+
+/* ---------- 主持人：開獎方式（網頁集氣／現場戳氣球） ---------- */
+let liveBtn = null;
+
+function updateLiveBtn() {
+  if (!liveBtn || !state) return;
+  liveBtn.textContent = state.live ? '🎈 開獎：現場' : '🌐 開獎：網頁';
+  liveBtn.classList.toggle('on', state.live);
+}
+
+function toggleLive() {
+  if (!state) return;
+  if (state.reveal) { toast('已經開獎了，先按「彩排歸零」'); return; }
+  if (state.is_active) { toast('進行中不能切換，先按「⏸ 暫停」'); return; }
+  const on = !state.live;
+  api.host('live', on)
+    .then(() => toast(on ? '🎈 改成現場戳氣球：不集氣，戳完按「📣 公布到手機」' : '🌐 改成網頁開獎：集氣達標後自動揭曉'))
+    .catch(hostError);
+}
+
+/** 現場模式：封盤並通知大家準備戳氣球 */
+function liveReady() {
+  if (!state) return;
+  if (!state.live) { toast('請先把開獎方式切到「現場」'); return; }
+  if (state.reveal) { toast('已經開獎了'); return; }
+  api.host('activate').then(() => toast('🎈 已通知大家準備戳氣球' + (state.bet.on ? '，押注已封盤' : ''))).catch(hostError);
+}
+
+/** 現場模式：氣球戳完後，把答案送到大家手機（煙火、卡片、結算） */
+function livePublish() {
+  if (!state) return;
+  if (!state.live) { toast('請先把開獎方式切到「現場」'); return; }
+  if (state.reveal) { toast('已經公布了'); return; }
+  if (!confirm('氣球戳完了嗎？\n按確定後，所有人的手機會出現煙火、揭曉卡片和懲罰清單。')) return;
+  api.host('force_reveal').then(() => toast('📣 已公布到手機！')).catch(hostError);
+}
+
 /** 集氣開始：手機上把營火移到最上面並捲過去 */
 let fireWasOn = null;
 function renderFireFocus() {
@@ -1704,7 +1796,7 @@ function renderFireFocus() {
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     // 等版面換完順序再捲，避免被瀏覽器的捲動錨定拉回原位
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      document.querySelector('.col-fire').scrollIntoView({ behavior: 'auto', block: 'start' });
+      (state.live ? els.liveCard : document.querySelector('.col-fire')).scrollIntoView({ behavior: 'auto', block: state.live ? 'center' : 'start' });
     }));
   }
   if (state) fireWasOn = on;
@@ -1964,7 +2056,8 @@ function renderBet(force = false) {
   verb.textContent = b.verb;
   els.betRule.replaceChildren(b.per === 1
     ? `每人 ${BET_CUPS} ${b.unit}，分配到男、女兩邊，鎖定後不能改。押錯那邊的${b.unit}數要`
-    : `每人 ${BET_CUPS} 注（每注 ${b.per} ${b.unit}），分配到男、女兩邊，鎖定後不能改。押錯那邊要`, verb, '。');
+    : `每人 ${BET_CUPS} 注（每注 ${b.per} ${b.unit}），分配到男、女兩邊，鎖定後不能改。押錯那邊要`, verb, '。',
+  ...(b.godOn ? [document.createElement('br'), `👑 全部押對的人成為「股神」：免${b.verb}，還可以指定別人${b.verb} ${cups(GOD_CUPS)}！`] : []));
 
   els.betBody.replaceChildren(...(ph === 'settle' ? [buildSettle()] : [buildMyBet(ph), buildBoard()]));
 }
@@ -2151,9 +2244,27 @@ function buildSettle() {
     who.append(why);
     const amt = document.createElement('span');
     amt.className = 'amt';
-    amt.textContent = lose ? `${b.verb} ${cups(lose)}` : '全對！🎉';
+    amt.textContent = lose ? `${b.verb} ${cups(lose)}` : b.godOn ? '👑 股神' : '全對！🎉';
     li.append(who, amt);
     ul.append(li);
+  }
+
+  // 👑 股神：所有杯數都押在答案那邊（All-in 全對）
+  const gods = b.godOn ? rows.filter((r) => !r.lose && (r.s.b + r.s.g) > 0) : [];
+  if (gods.length) {
+    const god = document.createElement('div');
+    god.className = 'bet-god';
+    const h = document.createElement('div');
+    h.className = 'god-title';
+    h.textContent = '👑 股神特權';
+    const names = document.createElement('div');
+    names.className = 'god-names';
+    names.textContent = gods.map((r) => nameOf(r.id) + (r.id === me ? '（你）' : '')).join('、');
+    const p = document.createElement('p');
+    p.textContent = `全押對！免${b.verb}，每位股神可以指定全場任一人${b.verb} ${cups(GOD_CUPS)}`
+      + (GOD_CUPS === 2 ? `（也可以拆成 ${cups(1)}＋${cups(1)}，指定兩個人）` : '');
+    god.append(h, names, p);
+    frag.append(god);
   }
 
   const note = document.createElement('div');
@@ -2179,7 +2290,9 @@ function render() {
     renderWall();
     renderJoin();
     renderMyWish();
+    renderLive();
     renderFireFocus();
+    updateLiveBtn();
     renderBet();
     updateVideoBtn();
   }
@@ -2194,7 +2307,7 @@ function checkMilestones() {
   MILESTONES.forEach(([r], i) => { if (ratio >= r) idx = i; });
   const prev = milestoneIdx;
   milestoneIdx = idx;
-  if (prev === null || idx <= prev || phase() !== 'active') return;
+  if (prev === null || idx <= prev || phase() !== 'active' || state.live) return;
   toast(MILESTONES[idx][1]);
   spawnSparks(60);
   boost = 0.6;
@@ -2207,7 +2320,7 @@ function checkMilestones() {
 let boost = 0;
 
 function registerClick(x, y) {
-  if (phase() !== 'active') return;
+  if (phase() !== 'active' || state.live) return;
   pending++;
   boost = Math.min(boost + 0.08, 0.6);
   vibrate(20);
@@ -2420,6 +2533,12 @@ function startReveal(rv) {
     fireworks(rv.gender, late ? 3000 : 7000);
     if (!late) vibrate([120, 60, 120, 60, 400]);
   };
+  // 現場戳氣球：氣球已經公布了，手機直接出煙火和卡片（不倒數、不播影片）
+  if (state && state.live) {
+    videoReady = null;
+    finish(now >= rv.at + LATE_JOIN_MS);
+    return;
+  }
   const useVideo = !!(state && state.video.on);
   videoReady = useVideo ? prepareVideo() : null;   // 讀鑰匙、解密，和倒數同時進行
   const atCard = () => (useVideo ? playRevealVideo(cardAt, finish) : finish(false));
@@ -2464,6 +2583,8 @@ function showRevealCard(gender) {
   // 押對多數的人（押對那邊的杯數比較多）
   els.rcRight.textContent = fmt(Object.values(state.bet.stakes).filter((s) => (boy ? s.b > s.g : s.g > s.b)).length);
   els.rcMine.textContent = fmt(state.myConfirmed);
+  // 現場模式沒有集氣，只留猜中人數
+  els.rcTotal.parentElement.hidden = els.rcMine.parentElement.hidden = state.live;
   els.rcDate.textContent = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' }) + ' · 全體親友一起揭曉';
   els.reveal.classList.add('show');
   els.rcAgain.focus();
@@ -2860,7 +2981,8 @@ function openBetAdmin() {
   if (!b || b.denied) {
     para('讀不到押注資料：請先到 Firebase Console → Realtime Database → 規則，貼上新版的 database.rules.json 並發布。');
   } else {
-    const cfg = { on: b.on, verb: b.verb, unit: b.unit, per: b.per, boostOn: b.boostOn, switchOn: b.switchOn };
+    // godOn 只在開啟時寫入：規則還沒更新時，關閉狀態的其他設定照樣存得進去
+    const cfg = { on: b.on, verb: b.verb, unit: b.unit, per: b.per, boostOn: b.boostOn, switchOn: b.switchOn, ...(b.godOn ? { godOn: true } : {}) };
     para(`押注功能：${b.on ? '✅ 開啟中' : '⛔ 已關閉'}（關閉時親友完全看不到押注）`);
     row(chip(b.on ? '關閉押注' : '開啟押注', {
       sel: !b.on,
@@ -2897,6 +3019,15 @@ function openBetAdmin() {
         onClick: () => run('bet_cfg', { ...cfg, switchOn: !b.switchOn }, b.switchOn ? '已關閉換邊' : '已開啟換邊'),
       }),
     );
+
+    para(`👑 股神獎勵：${b.godOn ? '✅ 開啟中' : '⛔ 已關閉'}（全押對的人免喝，還可以指定別人${b.verb} ${cups(GOD_CUPS)}）`);
+    row(chip(b.godOn ? '關閉股神獎勵' : '開啟股神獎勵', {
+      sel: b.godOn,
+      onClick: () => {
+        const { godOn, ...rest } = cfg;
+        run('bet_cfg', b.godOn ? rest : { ...rest, godOn: true }, b.godOn ? '已關閉股神獎勵' : '👑 已開啟股神獎勵');
+      },
+    }));
 
     const locked = b.lock || state.is_active;
     para(`下注狀態：${state.reveal ? '已開獎' : locked ? '🔒 已封盤' : '自由下注中'}（開啟集氣時會自動封盤）`);
@@ -2972,6 +3103,9 @@ function initPreviewBar() {
     ['📝 答案', openClueAdmin],
     ['🍻 押注', openBetAdmin],
     ['⏱️ 加碼 30 秒', startBoost],
+    ['🌐 開獎：網頁', toggleLive],
+    ['🎈 準備戳氣球', liveReady],
+    ['📣 公布到手機', livePublish],
     ['🎬 影片：關', toggleVideo],
     ['① 開啟集氣', () => { c.activate(); toast('主持人已開啟集氣！'); }],
     ['暫停', () => c.deactivate()],
@@ -2981,7 +3115,9 @@ function initPreviewBar() {
     ['重來', () => location.reload(), 'warn'],
   ]);
   videoBtn = tbBtns.find((b) => b.textContent.startsWith('🎬 影片：')) || null;
+  liveBtn = tbBtns.find((b) => b.textContent.includes('開獎：')) || null;
   updateVideoBtn();
+  updateLiveBtn();
   initClueHost(tbBtns[0]);
   initWallReset();
 }
@@ -2998,6 +3134,9 @@ function initHostBar() {
     ['📝 線索答案', openClueAdmin],
     ['🍻 押注', openBetAdmin],
     ['⏱️ 加碼 30 秒', startBoost],
+    ['🌐 開獎：網頁', toggleLive],
+    ['🎈 準備戳氣球', liveReady],
+    ['📣 公布到手機', livePublish],
     ['🎬 影片：關', toggleVideo],
     ['🔑 影片鑰匙', setVideoKey],
     ['▶ 開啟集氣', () => send('activate', null, '集氣開始！')],
@@ -3012,7 +3151,9 @@ function initHostBar() {
     }, 'warn'],
   ]);
   videoBtn = tbBtns.find((b) => b.textContent.startsWith('🎬 影片：')) || null;
+  liveBtn = tbBtns.find((b) => b.textContent.includes('開獎：')) || null;
   updateVideoBtn();
+  updateLiveBtn();
   initClueHost(tbBtns[0]);
   initWallReset();
 }

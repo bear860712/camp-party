@@ -17,6 +17,10 @@
         ".write": "auth != null && root.child('secret/host_key').exists() && root.child('hostAuth').child(auth.uid).val() === root.child('secret/host_key').val()",
         ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 10000000"
       },
+      "live": {
+        ".write": "auth != null && root.child('secret/host_key').exists() && root.child('hostAuth').child(auth.uid).val() === root.child('secret/host_key').val()",
+        ".validate": "newData.isBoolean()"
+      },
       "round": {
         ".write": "auth != null && root.child('secret/host_key').exists() && root.child('hostAuth').child(auth.uid).val() === root.child('secret/host_key').val()",
         ".validate": "newData.isString() && newData.val().length <= 20"
@@ -62,7 +66,7 @@
 
     "reveal": {
       ".read": true,
-      ".write": "auth != null && ((!newData.exists() && root.child('secret/host_key').exists() && root.child('hostAuth').child(auth.uid).val() === root.child('secret/host_key').val()) || (!data.exists() && newData.child('gender').val() === root.child('secret/gender').val() && (root.child('game/force').val() === true || root.child('game/total').val() >= root.child('game/target').val())))",
+      ".write": "auth != null && ((!newData.exists() && root.child('secret/host_key').exists() && root.child('hostAuth').child(auth.uid).val() === root.child('secret/host_key').val()) || (!data.exists() && newData.child('gender').val() === root.child('secret/gender').val() && (root.child('game/force').val() === true || (root.child('game/live').val() !== true && root.child('game/total').val() >= root.child('game/target').val()))))",
       ".validate": "newData.hasChildren(['gender', 'at'])",
       "gender": { ".validate": "newData.val() === 'BOY' || newData.val() === 'GIRL'" },
       "at": { ".validate": "newData.isNumber() && newData.val() <= now + 5000 && newData.val() >= now - 60000" },
@@ -92,6 +96,7 @@
         "per": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 100 && newData.val() % 1 === 0" },
         "boostOn": { ".validate": "newData.isBoolean()" },
         "switchOn": { ".validate": "newData.isBoolean()" },
+        "godOn": { ".validate": "newData.isBoolean()" },
         "$other": { ".validate": false }
       },
       "lock": { ".validate": "newData.isBoolean()" },
